@@ -1,0 +1,13 @@
+{
+  "Author": "JayceOfSpades",
+  "Name": "Mini-Mappingway",
+  "Punchline": "A plugin to show your friends on the minimap",
+  "Description": "/fmSettings - Open Settings",
+  "InternalName": "Mini-Mappingway",
+  "ApplicableVersion": "any",
+  "Tags": [
+    "friends",
+    "minimap",
+    "find"
+  ]
+}
