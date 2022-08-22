@@ -11,12 +11,14 @@ namespace MiniMappingWay
         public int Version { get; set; } = 0;
 
         public bool showFcMembers { get; set; } = false;
+        public bool showFriends { get; set; } = true;
 
         public bool enabled { get; set; } = true;
         public bool minimapLocked { get; set; } = false;
 
         public Vector4 friendColour = new Vector4(0,0,255,255);
         public Vector4 fcColour = new Vector4(255, 0, 0, 255);
+        public int circleSize = 4;
 
 
 

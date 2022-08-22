@@ -2,6 +2,7 @@
 using Dalamud.Game.ClientState.Objects;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Game.Gui;
+using Dalamud.Game.Text.SeStringHandling;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using MiniMappingWay.Model;
 using System;
@@ -24,7 +25,7 @@ namespace MiniMappingWay.Service
         public Vector2 playerPos = new Vector2();
         public bool inCombat = false;
 
-        private string FC = "";
+        private SeString FC;
 
 
         public FinderService(Configuration configuration, GameGui gameGui, ObjectTable objectTable)
@@ -37,6 +38,10 @@ namespace MiniMappingWay.Service
 
         public void LookFor()
         {
+            if(!this.configuration.showFcMembers && !this.configuration.showFriends)
+            {
+                return;
+            }
             friends.Clear();
             fcMembers.Clear();
             if(_objectTable == null || _objectTable.Length <= 0)
@@ -62,7 +67,7 @@ namespace MiniMappingWay.Service
 
             }
 
-            for (var i = 0; i < _objectTable.Length; i++)
+            for (var i = 1; i < _objectTable.Length-1; i++)
             {
                 var obj = _objectTable[i];
 
@@ -72,13 +77,17 @@ namespace MiniMappingWay.Service
                     continue;
                 }
                 //iscasting currently means friend
-                if (chara.StatusFlags.HasFlag(Dalamud.Game.ClientState.Objects.Enums.StatusFlags.IsCasting))
+                if (this.configuration.showFriends)
                 {
-                    friends.Add(obj);
+                    if (chara.StatusFlags.HasFlag(Dalamud.Game.ClientState.Objects.Enums.StatusFlags.IsCasting))
+                    {
+                        friends.Add(obj);
+                    }
                 }
-                if (this.configuration.showFcMembers && i != 0)
+ 
+                if (this.configuration.showFcMembers)
                 {
-                    if(chara.CompanyTag.ToString() == FC)
+                    if(chara.CompanyTag == FC)
                     {
                         fcMembers.Add(obj);
                     }

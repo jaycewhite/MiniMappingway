@@ -29,9 +29,9 @@ namespace MiniMappingWay
         Vector2 mapSize = new Vector2();
         Vector2 mapPos = new Vector2();
 
+        uint[] Colours = new uint[2];
         float minimapRadius;
 
-        uint _personColourUint = 0;
 
 
 
@@ -56,6 +56,9 @@ namespace MiniMappingWay
             this._gameGui = gameGui;
             this._finderService = finderService;
 
+            this.Colours[0] = ImGui.ColorConvertFloat4ToU32(this.configuration.friendColour);
+            this.Colours[1] = ImGui.ColorConvertFloat4ToU32(this.configuration.fcColour);
+
         }
 
         public void Dispose()
@@ -64,21 +67,26 @@ namespace MiniMappingWay
 
         public void Draw()
         {
-            // This is our only draw handler attached to UIBuilder, so it needs to be
-            // able to draw any windows we might have open.
-            // Each method checks its own visibility/state to ensure it only draws when
-            // it actually makes sense.
-            // There are other ways to do this, but it is generally best to keep the number of
-            // draw delegates as low as possible.
             DrawSettingsWindow();
+            if (!this.configuration.enabled)
+            {
+                return;
+            }
+
             if (!RunChecks())
             {
                 Dalamud.Logging.PluginLog.Error("RunChecks false");
                 return;
             }
 
-            PrepareDrawOnMinimap(this._finderService.friends, CircleCategory.friend);
-            PrepareDrawOnMinimap(this._finderService.fcMembers, CircleCategory.fc);
+            if (this.configuration.showFcMembers)
+            {
+                PrepareDrawOnMinimap(this._finderService.fcMembers, CircleCategory.fc);
+            }
+            if (this.configuration.showFriends)
+            {
+                PrepareDrawOnMinimap(this._finderService.friends, CircleCategory.friend);
+            }
 
             DoDraw();
         }
@@ -90,21 +98,28 @@ namespace MiniMappingWay
                 return;
             }
 
-            ImGui.SetNextWindowSize(new Vector2(350, 220), ImGuiCond.Appearing);
+            ImGui.SetNextWindowSize(new Vector2(350, 290), ImGuiCond.Appearing);
             if (ImGui.Begin("Mini-Mappingway Settings", ref this.settingsVisible, ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
             {
                 // can't ref a property, so use a local copy
-                var showFcMembers = this.configuration.showFcMembers;
-                if (ImGui.Checkbox("Show FC Members on minimap", ref showFcMembers))
-                {
-                    this.configuration.showFcMembers = showFcMembers;
-                    this.configuration.Save();
-                }
-
                 var enabled = this.configuration.enabled;
                 if (ImGui.Checkbox("Enabled", ref enabled))
                 {
                     this.configuration.enabled = enabled;
+                    this.configuration.Save();
+                }
+
+                var showFriends = this.configuration.showFriends;
+                if (ImGui.Checkbox("Show friends on minimap", ref showFriends))
+                {
+                    this.configuration.showFriends = showFriends;
+                    this.configuration.Save();
+                }
+
+                var showFcMembers = this.configuration.showFcMembers;
+                if (ImGui.Checkbox("Show FC Members on minimap", ref showFcMembers))
+                {
+                    this.configuration.showFcMembers = showFcMembers;
                     this.configuration.Save();
                 }
 
@@ -116,19 +131,26 @@ namespace MiniMappingWay
                     this.configuration.Save();
                 }
 
-                var personColour = this.configuration.friendColour;
-                ImGui.Text("Person Colour. Click the coloured square for a picker.");
-                if (ImGui.ColorEdit4("", ref personColour, ImGuiColorEditFlags.NoAlpha))
+                var friendColour = this.configuration.friendColour;
+                ImGui.Text("Friend Colour. Click the coloured square for a picker.");
+                if (ImGui.ColorEdit4("Person", ref friendColour, ImGuiColorEditFlags.NoAlpha))
                 {
-                    this.configuration.friendColour = personColour;
+                    this.configuration.friendColour = friendColour;
                     this.configuration.Save();
                 }
 
-                var fcColour = this.configuration.friendColour;
+                var fcColour = this.configuration.fcColour;
                 ImGui.Text("FC Colour. Click the coloured square for a picker.");
-                if (ImGui.ColorEdit4("", ref fcColour, ImGuiColorEditFlags.NoAlpha))
+                if (ImGui.ColorEdit4("FC", ref fcColour, ImGuiColorEditFlags.NoAlpha))
                 {
                     this.configuration.fcColour = fcColour;
+                    this.configuration.Save();
+                }
+
+                var circleSize = this.configuration.circleSize;
+                if(ImGui.SliderInt("Circle Size",ref circleSize, 1, 20))
+                {
+                    this.configuration.circleSize = circleSize;
                     this.configuration.Save();
                 }
 
@@ -208,26 +230,19 @@ namespace MiniMappingWay
 
         public void DoDraw()
         {
+            if(CirclePositions.Count == 0)
+            {
+                return;
+            }
             ImGui.SetNextWindowSize(mapSize, ImGuiCond.Always);
             ImGui.SetNextWindowPos(mapPos);
             if (ImGui.Begin("test", ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground))
             {
 
-                ImGui.Text($"{_finderService.naviMapInfo.zoom}");
                 ImDrawListPtr draw_list = ImGui.GetWindowDrawList();
                 CirclePositions.ForEach(circle =>
                 {
-                    ImGui.Text(circle.Item1.ToString());
-                    switch (circle.Item2)
-                    {
-                        case CircleCategory.fc:
-                            draw_list.AddCircleFilled(circle.Item1, 4, ImGui.ColorConvertFloat4ToU32(this.configuration.fcColour));
-                            break;
-
-                        case CircleCategory.friend:
-                            draw_list.AddCircleFilled(circle.Item1, 4, ImGui.ColorConvertFloat4ToU32(this.configuration.friendColour));
-                            break;
-                    }
+                    draw_list.AddCircleFilled(circle.Item1, this.configuration.circleSize, this.Colours[(int)circle.Item2]);
 
                 });
 
@@ -235,8 +250,6 @@ namespace MiniMappingWay
                 CirclePositions.Clear();
             }
         }
-
-        public static uint ColorConvert(byte r, byte g, byte b, byte a) { uint ret = a; ret <<= 8; ret += b; ret <<= 8; ret += g; ret <<= 8; ret += r; return ret; }
 
         public Vector2 RotateForMiniMap(Vector2 center, Vector2 pos, int angle)
         {
@@ -256,11 +269,6 @@ namespace MiniMappingWay
             return rotatedPoint;
 
 
-        }
-
-        uint ConvertVector4ToUint(Vector4 colour)
-        {
-            return (uint)((((int)colour.Z << 24) | ((int)colour.W << 16) | ((int)colour.X << 8) | (int)colour.Y) & 0xffffffffL);
         }
 
 

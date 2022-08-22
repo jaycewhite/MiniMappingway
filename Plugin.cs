@@ -12,9 +12,9 @@ namespace MiniMappingWay
 {
     public sealed class Plugin : IDalamudPlugin
     {
-        public string Name => "Sample Plugin";
+        public string Name => "Mini-Mappingway";
 
-        private const string commandName = "/pmycommand";
+        private const string commandName = "/mmway";
 
 
         public delegate void OnMessageDelegate(XivChatType type, uint senderId, ref SeString sender, ref SeString message, ref bool isHandled);
@@ -44,7 +44,7 @@ namespace MiniMappingWay
 
             this.CommandManager.AddHandler(commandName, new CommandInfo(OnCommand)
             {
-                HelpMessage = "A useful message to display in /xlhelp"
+                HelpMessage = "Opens Mini-Mappingway settings"
             });
 
             this.PluginInterface.UiBuilder.Draw += DrawUI;
@@ -61,12 +61,12 @@ namespace MiniMappingWay
 
         private void OnCommand(string command, string args)
         {
-            if(command != null && command == "rollcheck")
+            if(command != null && command == "/mmway")
             {
-
+                this.PluginUi.SettingsVisible = true;
             }
             // in response to the slash command, just display our main ui
-            this.PluginUi.Visible = true;
+
         }
 
         private void DrawUI()
