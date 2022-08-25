@@ -27,9 +27,6 @@ namespace MiniMappingWay.Service
 
         public Vector2 playerPos = new Vector2();
         public bool inCombat = false;
-        readonly bool loggedIn;
-        readonly IntPtr MapId1;
-        readonly IntPtr MapId2;
 
 
 
@@ -71,7 +68,9 @@ namespace MiniMappingWay.Service
 
                 unsafe
                 {
-
+                    if(_objectTable[0] is null) {
+                        return;
+                    }
                     var player = (Character*)_objectTable[0].Address;
                     playerPos = new Vector2(player->GameObject.Position.X, player->GameObject.Position.Z);
 

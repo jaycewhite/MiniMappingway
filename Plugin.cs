@@ -23,7 +23,6 @@ namespace MiniMappingWay
         public delegate void OnMessageDelegate(XivChatType type, uint senderId, ref SeString sender, ref SeString message, ref bool isHandled);
 
         private DalamudPluginInterface PluginInterface { get; init; }
-        private DataManager DataManager { get; init; }
         private CommandManager CommandManager { get; init; }
         private Configuration Configuration { get; init; }
         private PluginUI PluginUi { get; init; }

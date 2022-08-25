@@ -11,6 +11,7 @@
 
   <PropertyGroup>
     <TargetFramework>net6.0-windows</TargetFramework>
+	<RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <Platforms>x64</Platforms>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
