@@ -14,13 +14,19 @@ namespace MiniMappingWay.Model
 
         public int yOffset = +1;
 
-        public float scale;
+        public float naviScale;
+
+        public float zoneScale;
 
         public float rotation;
 
         public bool visible;
 
         public float zoom;
+
+        public short offsetX;
+
+        public short offsetY;
 
 
     }

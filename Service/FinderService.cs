@@ -1,13 +1,21 @@
 ﻿using Dalamud;
 using Dalamud.Game.ClientState.Objects;
-using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Game.Gui;
 using Dalamud.Game.Text.SeStringHandling;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using MiniMappingWay.Model;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Threading.Tasks;
+using Dalamud.Game.ClientState.Objects.Enums;
+using Types = Dalamud.Game.ClientState.Objects.Types;
+using Dalamud.Data;
+using Lumina.Excel.GeneratedSheets;
+
+using Lumina.Excel;
+using Dalamud.Game;
 
 namespace MiniMappingWay.Service
 {
@@ -17,49 +25,111 @@ namespace MiniMappingWay.Service
         private Configuration configuration;
         private readonly GameGui _gameGui;
         private readonly ObjectTable _objectTable;
+        private readonly SigScanner _sigScanner;
 
-        public List<GameObject> friends = new List<GameObject>();
-        public List<GameObject> fcMembers = new List<GameObject>();
+        public List<Types.GameObject> friends = new List<Types.GameObject>();
+        public List<Types.GameObject> fcMembers = new List<Types.GameObject>();
         public NaviMapInfo naviMapInfo = new NaviMapInfo();
 
         public Vector2 playerPos = new Vector2();
         public bool inCombat = false;
 
-        private SeString FC;
+        bool loggedIn;
+
+        IntPtr MapId1;
+        IntPtr MapId2;
+
+        ExcelSheet<Map>? Maps;
 
 
-        public FinderService(Configuration configuration, GameGui gameGui, ObjectTable objectTable)
+
+
+        public FinderService(Configuration configuration, GameGui gameGui, ObjectTable objectTable, DataManager dataManager, SigScanner sigScanner)
         {
             this.configuration = configuration;
             this._gameGui = gameGui;
             this._objectTable = objectTable;
+            this._sigScanner = sigScanner;
+            Maps = dataManager.GetExcelSheet<Map>();
+
+            this.MapId2 = _sigScanner.GetStaticAddressFromSig("44 0F 44 3D ?? ?? ?? ??");
+            this.MapId1 = _sigScanner.GetStaticAddressFromSig("44 8B 3D ?? ?? ?? ?? 45 85 FF");
+
+            updateMap();
+
+
 
         }
 
-        public void LookFor()
+        unsafe uint getMapId()
         {
-            if(!this.configuration.showFcMembers && !this.configuration.showFriends)
+            try
+            {
+                return *(uint*)MapId1 == 0 ? *(uint*)MapId2 : *(uint*)MapId1;
+
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
+        public void updateMap()
+        {
+            if (Maps != null)
+            {
+                var map = Maps.GetRow(getMapId());
+                if (map == null) { return; }
+                if (map.SizeFactor != 0)
+                {
+                    naviMapInfo.zoneScale = (float)map.SizeFactor / 100;
+                }
+                else
+                {
+                    naviMapInfo.zoneScale = 1;
+                }
+                naviMapInfo.offsetX = map.OffsetX;
+                naviMapInfo.offsetY = map.OffsetY;
+
+            }
+        }
+
+
+
+        public unsafe void LookFor()
+        {
+            if (!this.configuration.showFcMembers && !this.configuration.showFriends)
             {
                 return;
             }
+
             friends.Clear();
             fcMembers.Clear();
-            if(_objectTable == null || _objectTable.Length <= 0)
+
+
+
+            byte* FC = null;
+            if (_objectTable == null || _objectTable.Length <= 0)
             {
                 return;
             }
             try
             {
-                var player = _objectTable[0];
-                playerPos = new Vector2(player.Position.X, player.Position.Z);
-                if(player is Character playerChara)
+                
+                unsafe
                 {
-                    if (playerChara.StatusFlags.HasFlag(Dalamud.Game.ClientState.Objects.Enums.StatusFlags.InCombat))
-                    {
-                        return;
-                    }
-                    FC = playerChara.CompanyTag.ToString();
+                    
+                    var player = (Character*)_objectTable[0].Address;
+                    playerPos = new Vector2(player->GameObject.Position.X, player->GameObject.Position.Z);
+
+                        if (((StatusFlags)player->StatusFlags).HasFlag(StatusFlags.InCombat))
+                        {
+                            return;
+                        }
+                      FC = player->FreeCompanyTag;
+
                 }
+
 
             }
             catch
@@ -67,36 +137,54 @@ namespace MiniMappingWay.Service
 
             }
 
-            for (var i = 1; i < _objectTable.Length-1; i++)
+            Parallel.For(1, _objectTable.Length, (i, state) =>
             {
                 var obj = _objectTable[i];
 
-                if (obj == null) { continue; }
-                if (!(obj is Character chara))
+                if (obj == null) { return; }
+                unsafe
                 {
-                    continue;
-                }
-                //iscasting currently means friend
-                if (this.configuration.showFriends)
-                {
-                    if (chara.StatusFlags.HasFlag(Dalamud.Game.ClientState.Objects.Enums.StatusFlags.IsCasting))
+                    var ptr = obj.Address;
+                    var charPointer = (FFXIVClientStructs.FFXIV.Client.Game.Character.Character*)ptr;
+                    if (charPointer->GameObject.ObjectKind != (byte)ObjectKind.Player)
                     {
-                        friends.Add(obj);
+                        return;
                     }
-                }
- 
-                if (this.configuration.showFcMembers)
-                {
-                    if(chara.CompanyTag == FC)
-                    {
-                        fcMembers.Add(obj);
-                    }
-                }
-            }
 
+                    //iscasting currently means friend
+                    if (this.configuration.showFriends)
+                    {
+                        if (((StatusFlags)charPointer->StatusFlags).HasFlag(StatusFlags.OffhandOut))
+                        {
+                            lock (friends)
+                            {
+                                friends.Add(obj);
+
+                            }
+                        }
+                    }
+
+                    if (this.configuration.showFcMembers)
+                    {
+                        if(FC == null)
+                        {
+                            return;
+                        }
+                        var tempFc = new ReadOnlySpan<byte>(charPointer->FreeCompanyTag, 7);
+                        var playerFC = new ReadOnlySpan<byte>(FC, 7);
+
+                        if (playerFC.SequenceEqual(tempFc))
+                        {
+                            lock (fcMembers)
+                            {
+                                fcMembers.Add(obj);
+                            }
+                        }
+                    }
+                }
+            });
 
         }
-
 
         public void Dispose()
         {
@@ -116,11 +204,11 @@ namespace MiniMappingWay.Service
                 var naviMap = (AtkUnitBase*)naviMapPtr;
 
                 var rot = (float*)((nint)naviMap + 0x254);
-                var scale = (float*)((nint)naviMap + 0x24C);
+                var naviScale = (float*)((nint)naviMap + 0x24C); 
                 try
                 {
                     naviMapInfo.rotation = *rot;
-                    naviMapInfo.zoom = *scale;
+                    naviMapInfo.zoom = *naviScale;
                 }
                 catch
                 {
@@ -129,7 +217,8 @@ namespace MiniMappingWay.Service
 
                 naviMapInfo.X = naviMap->X;
                 naviMapInfo.Y = naviMap->Y;
-                naviMapInfo.scale = naviMap->Scale;
+                naviMapInfo.naviScale = naviMap->Scale;
+                naviMapInfo.visible = naviMap->IsVisible;
             }
 
             return true;

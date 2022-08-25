@@ -1,4 +1,7 @@
-﻿using Dalamud.Game.ClientState.Objects;
+﻿using Dalamud.Data;
+using Dalamud.Game;
+using Dalamud.Game.ClientState;
+using Dalamud.Game.ClientState.Objects;
 using Dalamud.Game.Command;
 using Dalamud.Game.Gui;
 using Dalamud.Game.Text;
@@ -20,6 +23,7 @@ namespace MiniMappingWay
         public delegate void OnMessageDelegate(XivChatType type, uint senderId, ref SeString sender, ref SeString message, ref bool isHandled);
 
         private DalamudPluginInterface PluginInterface { get; init; }
+        private DataManager DataManager { get; init; }
         private CommandManager CommandManager { get; init; }
         private Configuration Configuration { get; init; }
         private PluginUI PluginUi { get; init; }
@@ -29,18 +33,22 @@ namespace MiniMappingWay
             [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
             [RequiredVersion("1.0")] CommandManager commandManager,
             [RequiredVersion("1.0")] GameGui gameGui,
-            [RequiredVersion("1.0")] ObjectTable objectTable)
+            [RequiredVersion("1.0")] ObjectTable objectTable,
+            [RequiredVersion("1.0")] DataManager dataManager,
+            [RequiredVersion("1.0")] SigScanner sigScanner,
+            [RequiredVersion("1.0")] ClientState ClientState)
         {
             
 
             this.PluginInterface = pluginInterface;
             this.CommandManager = commandManager;
 
+
             this.Configuration = this.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
             this.Configuration.Initialize(this.PluginInterface);
-            this.finderService = new FinderService(this.Configuration, gameGui, objectTable);
+            this.finderService = new FinderService(this.Configuration, gameGui, objectTable, dataManager, sigScanner);
 
-            this.PluginUi = new PluginUI(this.Configuration, gameGui, finderService);
+            this.PluginUi = new PluginUI(this.Configuration, finderService, ClientState);
 
             this.CommandManager.AddHandler(commandName, new CommandInfo(OnCommand)
             {
@@ -50,7 +58,6 @@ namespace MiniMappingWay
             this.PluginInterface.UiBuilder.Draw += DrawUI;
             this.PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
 
-            
         }
 
         public void Dispose()

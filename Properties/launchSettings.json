@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "MiniMappingway": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}

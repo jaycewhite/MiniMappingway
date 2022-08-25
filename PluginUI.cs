@@ -11,6 +11,9 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Numerics;
 using MiniMappingway.Model;
+using System.Threading.Tasks;
+using System.Linq;
+using Dalamud.Game.ClientState;
 
 namespace MiniMappingWay
 {
@@ -19,10 +22,10 @@ namespace MiniMappingWay
     class PluginUI : IDisposable
     {
         private Configuration configuration;
-        private readonly GameGui _gameGui;
         private readonly FinderService _finderService;
+        private readonly ClientState _clientState;
 
-        public List<Tuple<Vector2, CircleCategory>> CirclePositions = new List<Tuple<Vector2, CircleCategory>>();
+        public List<CircleData> CircleData = new List<CircleData>();
         private readonly int _naviMapSize = 218;
 
         Vector2 centerPoint = new Vector2();
@@ -33,7 +36,7 @@ namespace MiniMappingWay
         float minimapRadius;
 
 
-
+        
 
         // this extra bool exists for ImGui, since you can't ref a property
         private bool visible = false;
@@ -50,15 +53,21 @@ namespace MiniMappingWay
             set { this.settingsVisible = value; }
         }
 
-        public PluginUI(Configuration configuration, GameGui gameGui, FinderService finderService)
+        public PluginUI(Configuration configuration, FinderService finderService, ClientState clientState)
         {
             this.configuration = configuration;
-            this._gameGui = gameGui;
             this._finderService = finderService;
+            this._clientState = clientState;
 
+            clientState.TerritoryChanged+= (i,x) => { this._finderService.updateMap(); };
+            clientState.load
+            updateColourArray();
+        }
+
+        public void updateColourArray()
+        {
             this.Colours[0] = ImGui.ColorConvertFloat4ToU32(this.configuration.friendColour);
             this.Colours[1] = ImGui.ColorConvertFloat4ToU32(this.configuration.fcColour);
-
         }
 
         public void Dispose()
@@ -68,7 +77,14 @@ namespace MiniMappingWay
         public void Draw()
         {
             DrawSettingsWindow();
+            
+
             if (!this.configuration.enabled)
+            {
+                return;
+            }
+
+            if (!_clientState.IsLoggedIn)
             {
                 return;
             }
@@ -137,6 +153,8 @@ namespace MiniMappingWay
                 {
                     this.configuration.friendColour = friendColour;
                     this.configuration.Save();
+                    updateColourArray();
+
                 }
 
                 var fcColour = this.configuration.fcColour;
@@ -145,6 +163,8 @@ namespace MiniMappingWay
                 {
                     this.configuration.fcColour = fcColour;
                     this.configuration.Save();
+                    updateColourArray();
+
                 }
 
                 var circleSize = this.configuration.circleSize;
@@ -160,6 +180,7 @@ namespace MiniMappingWay
 
         public bool RunChecks()
         {
+            
             if (!configuration.enabled)
             {
                 return false;
@@ -171,7 +192,7 @@ namespace MiniMappingWay
             }
 
             _finderService.LookFor();
-            mapSize = new Vector2(_naviMapSize * _finderService.naviMapInfo.scale, _naviMapSize * _finderService.naviMapInfo.scale);
+            mapSize = new Vector2(_naviMapSize * _finderService.naviMapInfo.naviScale, _naviMapSize * _finderService.naviMapInfo.naviScale);
             minimapRadius = mapSize.X * 0.33f;
             mapPos = new Vector2(_finderService.naviMapInfo.X, _finderService.naviMapInfo.Y);
             return true;
@@ -185,22 +206,25 @@ namespace MiniMappingWay
 
                 {
 
-                    var relativePosX = (_finderService.playerPos.X - _finderService.playerPos.X) * _finderService.naviMapInfo.scale;
-                    var relativePosZ = (_finderService.playerPos.Y - _finderService.playerPos.Y + _finderService.naviMapInfo.yOffset) * _finderService.naviMapInfo.scale;
+                    var relativePosX = (_finderService.playerPos.X - _finderService.playerPos.X) * _finderService.naviMapInfo.naviScale;
+                    var relativePosZ = (_finderService.playerPos.Y - _finderService.playerPos.Y + _finderService.naviMapInfo.yOffset) * _finderService.naviMapInfo.naviScale;
                     relativePosZ = (-relativePosZ);
                     relativePosX = (-relativePosX);
-                    centerPoint = new Vector2(relativePosX + _finderService.naviMapInfo.X + mapSize.X / 2, relativePosZ + _finderService.naviMapInfo.Y + mapSize.Y / 2);
+                    centerPoint = new Vector2(relativePosX + _finderService.naviMapInfo.X + mapSize.X / 2, -2 +relativePosZ + _finderService.naviMapInfo.Y + mapSize.Y / 2);
                 }
 
 
-
-                foreach (var person in list)
+                //Parallel.ForEach(
+                //    list,
+                //    () => new List<CircleData>(),
+                //(person,loopstate,localstate) =>
+                foreach(var person in list)
                 {
-                    var relativePosX = (_finderService.playerPos.X - person.Position.X) * _finderService.naviMapInfo.scale;
-                    var relativePosZ = (_finderService.playerPos.Y - person.Position.Z + _finderService.naviMapInfo.yOffset) * _finderService.naviMapInfo.scale;
-                    relativePosZ = (-relativePosZ) * 2f * _finderService.naviMapInfo.zoom;
-                    relativePosX = (-relativePosX) * 2f * _finderService.naviMapInfo.zoom;
-                    uint scale = (uint)(_finderService.naviMapInfo.scale * 10);
+                    var relativePosX = (_finderService.playerPos.X - person.Position.X) * _finderService.naviMapInfo.naviScale;
+                    var relativePosZ = (_finderService.playerPos.Y - person.Position.Z + _finderService.naviMapInfo.yOffset) * _finderService.naviMapInfo.naviScale;
+                    relativePosZ = (-relativePosZ) * _finderService.naviMapInfo.zoneScale * _finderService.naviMapInfo.zoom;
+                    relativePosX = (-relativePosX) * _finderService.naviMapInfo.zoneScale * _finderService.naviMapInfo.zoom;
+                    uint scale = (uint)(_finderService.naviMapInfo.naviScale * 10);
                     var circlePos = new Vector2(relativePosX + _finderService.naviMapInfo.X + mapSize.X / 2, relativePosZ + _finderService.naviMapInfo.Y + mapSize.Y / 2);
 
 
@@ -218,11 +242,13 @@ namespace MiniMappingWay
                         originToObject *= minimapRadius / distance;
                         circlePos = centerPoint + originToObject;
                     }
-
-                    CirclePositions.Add(new Tuple<Vector2, CircleCategory>(circlePos, circleCategory));
+                    CircleData.Add(new CircleData(circlePos, circleCategory));
+                    
 
 
                 }
+
+
 
             }
 
@@ -230,24 +256,30 @@ namespace MiniMappingWay
 
         public void DoDraw()
         {
-            if(CirclePositions.Count == 0)
-            {
-                return;
-            }
+            //if (CircleData.Count == 0)
+            //{
+            //    return;
+            //}
             ImGui.SetNextWindowSize(mapSize, ImGuiCond.Always);
             ImGui.SetNextWindowPos(mapPos);
             if (ImGui.Begin("test", ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground))
             {
 
                 ImDrawListPtr draw_list = ImGui.GetWindowDrawList();
-                CirclePositions.ForEach(circle =>
+
+                CircleData.ForEach(circle =>
                 {
-                    draw_list.AddCircleFilled(circle.Item1, this.configuration.circleSize, this.Colours[(int)circle.Item2]);
+                    draw_list.AddCircleFilled(circle.Position, this.configuration.circleSize, this.Colours[(int)circle.Category]);
 
                 });
+                ImGui.Text($"zoom {_finderService.naviMapInfo.zoom}");
+                ImGui.Text($"naviScale {_finderService.naviMapInfo.naviScale}");
+                ImGui.Text($"zoneScale {_finderService.naviMapInfo.zoneScale}");
+                ImGui.Text($"offsetX {_finderService.naviMapInfo.offsetX}");
+                ImGui.Text($"offsetY {_finderService.naviMapInfo.offsetY}");
 
                 ImGui.End();
-                CirclePositions.Clear();
+                CircleData.Clear();
             }
         }
 
