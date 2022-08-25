@@ -3,10 +3,9 @@
   <PropertyGroup>
     <Authors></Authors>
     <Company></Company>
-    <Version>0.0.0.1</Version>
-    <Description>A sample plugin.</Description>
+    <Description>MiniMappingway</Description>
     <Copyright></Copyright>
-    <PackageProjectUrl>https://github.com/goatcorp/SamplePlugin</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/jaycewhite/MiniMappingway</PackageProjectUrl>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -72,5 +71,24 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
+
+	<ProjectExtensions>
+		<DalamudPlugin>
+			<ApiLevel>7</ApiLevel>
+			<Author>JayceOfSpades</Author>
+			<Name>Mini-Mappingway</Name>
+			<Punchline>A plugin to show your friends and FC members on the minimap.</Punchline>
+			<Description>A plugin to show your friends and FC members on the minimap. Customise the markers and toggle whether you want to see friends, FC members, or both, in the settings! IMPORTANT: If you have your minimap rotation locked, please enable 'Minimap Locked' in the settings.</Description>
+			<Tags>
+				<Tag>friend</Tag>
+				<Tag>minimap</Tag>
+				<Tag>friends</Tag>
+				<Tag>Botanist</Tag>
+				<Tag>Free Company</Tag>
+				<Tag>FC</Tag>
+			</Tags>
+			<Hidden>False</Hidden>
+		</DalamudPlugin>
+	</ProjectExtensions>
 
 </Project>
