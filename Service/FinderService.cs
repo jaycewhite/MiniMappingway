@@ -124,7 +124,6 @@ namespace MiniMappingWay.Service
                         }
                         var tempFc = new ReadOnlySpan<byte>(charPointer->FreeCompanyTag, 7);
                         var playerFC = new ReadOnlySpan<byte>(FC, 7);
-                        char test = " "[0];
                         NaviMapManager.debugValue = (FC->CompareTo(0) == 0).ToString();
                         if (FC->CompareTo(0) == 0)
                         {
