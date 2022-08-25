@@ -8,8 +8,8 @@ using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.IoC;
 using Dalamud.Plugin;
+using MiniMappingway.Manager;
 using MiniMappingWay.Service;
-using System.IO;
 
 namespace MiniMappingWay
 {
@@ -38,7 +38,7 @@ namespace MiniMappingWay
             [RequiredVersion("1.0")] SigScanner sigScanner,
             [RequiredVersion("1.0")] ClientState ClientState)
         {
-            
+
 
             this.PluginInterface = pluginInterface;
             this.CommandManager = commandManager;
@@ -58,6 +58,9 @@ namespace MiniMappingWay
             this.PluginInterface.UiBuilder.Draw += DrawUI;
             this.PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
 
+            ClientState.TerritoryChanged += (i, x) => { NaviMapManager.updateOncePerZone(gameGui); };
+
+
         }
 
         public void Dispose()
@@ -68,7 +71,7 @@ namespace MiniMappingWay
 
         private void OnCommand(string command, string args)
         {
-            if(command != null && command == "/mmway")
+            if (command != null && command == "/mmway")
             {
                 this.PluginUi.SettingsVisible = true;
             }

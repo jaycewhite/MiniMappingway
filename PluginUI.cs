@@ -1,19 +1,13 @@
-﻿using Dalamud.Game.ClientState.Objects;
+﻿using Dalamud.Game.ClientState;
 using Dalamud.Game.ClientState.Objects.Types;
-using Dalamud.Game.Gui;
-using Dalamud.Utility;
-using FFXIVClientStructs.FFXIV.Component.GUI;
-using MiniMappingWay.Service;
 using ImGuiNET;
-using ImGuizmoNET;
+using MiniMappingway.Manager;
+using MiniMappingway.Model;
+using MiniMappingWay.Service;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Numerics;
-using MiniMappingway.Model;
-using System.Threading.Tasks;
-using System.Linq;
-using Dalamud.Game.ClientState;
+
 
 namespace MiniMappingWay
 {
@@ -36,7 +30,7 @@ namespace MiniMappingWay
         float minimapRadius;
 
 
-        
+
 
         // this extra bool exists for ImGui, since you can't ref a property
         private bool visible = false;
@@ -59,9 +53,10 @@ namespace MiniMappingWay
             this._finderService = finderService;
             this._clientState = clientState;
 
-            clientState.TerritoryChanged+= (i,x) => { this._finderService.updateMap(); };
             updateColourArray();
         }
+
+
 
         public void updateColourArray()
         {
@@ -76,7 +71,7 @@ namespace MiniMappingWay
         public void Draw()
         {
             DrawSettingsWindow();
-            
+
 
             if (!this.configuration.enabled)
             {
@@ -93,7 +88,7 @@ namespace MiniMappingWay
                 Dalamud.Logging.PluginLog.Error("RunChecks false");
                 return;
             }
-            if (_finderService.naviMapInfo.loading)
+            if (NaviMapManager.loading)
             {
                 return;
             }
@@ -171,7 +166,7 @@ namespace MiniMappingWay
                 }
 
                 var circleSize = this.configuration.circleSize;
-                if(ImGui.SliderInt("Circle Size",ref circleSize, 1, 20))
+                if (ImGui.SliderInt("Circle Size", ref circleSize, 1, 20))
                 {
                     this.configuration.circleSize = circleSize;
                     this.configuration.Save();
@@ -183,22 +178,22 @@ namespace MiniMappingWay
 
         public bool RunChecks()
         {
-            
+
             if (!configuration.enabled)
             {
                 return false;
-               
+
             }
-            if (!_finderService.updateNaviMap())
+            if (!NaviMapManager.updateNaviMap())
             {
                 return false;
             }
 
 
             _finderService.LookFor();
-            mapSize = new Vector2(_naviMapSize * _finderService.naviMapInfo.naviScale, _naviMapSize * _finderService.naviMapInfo.naviScale);
+            mapSize = new Vector2(_naviMapSize * NaviMapManager.naviScale, _naviMapSize * NaviMapManager.naviScale);
             minimapRadius = mapSize.X * 0.315f;
-            mapPos = new Vector2(_finderService.naviMapInfo.X, _finderService.naviMapInfo.Y);
+            mapPos = new Vector2(NaviMapManager.X, NaviMapManager.Y);
             return true;
         }
 
@@ -207,36 +202,24 @@ namespace MiniMappingWay
 
             if (list.Count > 0)
             {
+                var PlayerRelativePosX = (_finderService.playerPos.X - _finderService.playerPos.X) * NaviMapManager.naviScale;
+                var PlayerRelativePosZ = (_finderService.playerPos.Y - _finderService.playerPos.Y + NaviMapManager.yOffset) * NaviMapManager.naviScale;
+                PlayerRelativePosZ = (-PlayerRelativePosZ);
+                PlayerRelativePosX = (-PlayerRelativePosX);
+                centerPoint = new Vector2(PlayerRelativePosX + NaviMapManager.X + mapSize.X / 2, -3.5f + PlayerRelativePosZ + NaviMapManager.Y + mapSize.Y / 2);
 
+                foreach (var person in list)
                 {
-
-                    var relativePosX = (_finderService.playerPos.X - _finderService.playerPos.X) * _finderService.naviMapInfo.naviScale;
-                    var relativePosZ = (_finderService.playerPos.Y - _finderService.playerPos.Y + _finderService.naviMapInfo.yOffset) * _finderService.naviMapInfo.naviScale;
-                    relativePosZ = (-relativePosZ);
-                    relativePosX = (-relativePosX);
-                    centerPoint = new Vector2(relativePosX + _finderService.naviMapInfo.X + mapSize.X / 2, -3.5f +relativePosZ + _finderService.naviMapInfo.Y + mapSize.Y / 2);
-                }
-
-
-                //Parallel.ForEach(
-                //    list,
-                //    () => new List<CircleData>(),
-                //(person,loopstate,localstate) =>
-                foreach(var person in list)
-                {
-                    var relativePosX = (_finderService.playerPos.X - person.Position.X) * _finderService.naviMapInfo.naviScale;
-                    var relativePosZ = (_finderService.playerPos.Y - person.Position.Z + _finderService.naviMapInfo.yOffset) * _finderService.naviMapInfo.naviScale;
-                    relativePosZ = (-relativePosZ) * _finderService.naviMapInfo.zoneScale * _finderService.naviMapInfo.zoom;
-                    relativePosX = (-relativePosX) * _finderService.naviMapInfo.zoneScale * _finderService.naviMapInfo.zoom;
-                    uint scale = (uint)(_finderService.naviMapInfo.naviScale * 10);
-                    var circlePos = new Vector2(relativePosX + _finderService.naviMapInfo.X + mapSize.X / 2, relativePosZ + _finderService.naviMapInfo.Y + mapSize.Y / 2);
-
+                    var relativePosX = (_finderService.playerPos.X - person.Position.X) * NaviMapManager.naviScale;
+                    var relativePosZ = (_finderService.playerPos.Y - person.Position.Z + NaviMapManager.yOffset) * NaviMapManager.naviScale;
+                    relativePosZ = (-relativePosZ) * NaviMapManager.zoneScale * NaviMapManager.zoom;
+                    relativePosX = (-relativePosX) * NaviMapManager.zoneScale * NaviMapManager.zoom;
+                    var circlePos = new Vector2(relativePosX + NaviMapManager.X + mapSize.X / 2, relativePosZ + NaviMapManager.Y + mapSize.Y / 2);
 
 
                     if (!this.configuration.minimapLocked)
                     {
-
-                        circlePos = RotateForMiniMap(centerPoint, circlePos, (int)_finderService.naviMapInfo.rotation);
+                        circlePos = RotateForMiniMap(centerPoint, circlePos, (int)NaviMapManager.rotation);
                     }
 
                     var distance = Vector2.Distance(centerPoint, circlePos);
@@ -247,30 +230,19 @@ namespace MiniMappingWay
                         circlePos = centerPoint + originToObject;
                     }
                     CircleData.Add(new CircleData(circlePos, circleCategory));
-                    
-
 
                 }
-                
-                CircleData.Add(new CircleData(centerPoint, circleCategory));
-
-
-
+                //for debugging center point
+                //CircleData.Add(new CircleData(centerPoint, circleCategory));
             }
-
         }
 
         public void DoDraw()
         {
-            //if (CircleData.Count == 0)
-            //{
-            //    return;
-            //}
             ImGui.SetNextWindowSize(mapSize, ImGuiCond.Always);
             ImGui.SetNextWindowPos(mapPos);
-            if (ImGui.Begin("test", ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground))
+            if (ImGui.Begin("minimapOverlay", ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground))
             {
-
                 ImDrawListPtr draw_list = ImGui.GetWindowDrawList();
 
                 CircleData.ForEach(circle =>
@@ -278,12 +250,14 @@ namespace MiniMappingWay
                     draw_list.AddCircleFilled(circle.Position, this.configuration.circleSize, this.Colours[(int)circle.Category]);
 
                 });
-                ImGui.Text($"zoom {_finderService.naviMapInfo.zoom}");
-                ImGui.Text($"naviScale {_finderService.naviMapInfo.naviScale}");
-                ImGui.Text($"zoneScale {_finderService.naviMapInfo.zoneScale}");
-                ImGui.Text($"offsetX {_finderService.naviMapInfo.offsetX}");
-                ImGui.Text($"offsetY {_finderService.naviMapInfo.offsetY}");
-                ImGui.Text($"debug {_finderService.naviMapInfo.debugValue}");
+#if (DEBUG)
+                ImGui.Text($"zoom {NaviMapManager.zoom}");
+                ImGui.Text($"naviScale {NaviMapManager.naviScale}");
+                ImGui.Text($"zoneScale {NaviMapManager.zoneScale}");
+                ImGui.Text($"offsetX {NaviMapManager.offsetX}");
+                ImGui.Text($"offsetY {NaviMapManager.offsetY}");
+                ImGui.Text($"debug {NaviMapManager.debugValue}");
+#endif
 
                 ImGui.End();
                 CircleData.Clear();
@@ -306,12 +280,6 @@ namespace MiniMappingWay
             cosTheta * (pos.Y - center.Y) + center.Y);
 
             return rotatedPoint;
-
-
         }
-
-
     }
-
-
 }
