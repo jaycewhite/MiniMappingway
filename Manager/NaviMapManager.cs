@@ -42,15 +42,24 @@ namespace MiniMappingway.Manager
 
         public static IntPtr MapSig2;
 
+        private static GameGui? gameGui;
 
-        public static void Init(GameGui gameGui, SigScanner sigScanner, DataManager dataManager)
+
+        public static void Init(GameGui _gameGui, SigScanner sigScanner, DataManager dataManager)
         {
+            gameGui = _gameGui;
             MapSig1 = sigScanner.GetStaticAddressFromSig("44 8B 3D ?? ?? ?? ?? 45 85 FF");
             MapSig2 = sigScanner.GetStaticAddressFromSig("44 0F 44 3D ?? ?? ?? ??");
-            naviMapPointer = gameGui.GetAddonByName("_NaviMap", 1);
+            UpdateNavMapPointer();
             Maps = dataManager.GetExcelSheet<Map>();
             updateNaviMap();
             updateMap();
+        }
+
+        public static void UpdateNavMapPointer()
+        {
+            if(gameGui == null) { return; }
+            naviMapPointer = gameGui.GetAddonByName("_NaviMap", 1);
         }
 
         public static bool updateNaviMap()
@@ -92,6 +101,10 @@ namespace MiniMappingway.Manager
 
         public static void updateOncePerZone(GameGui gameGui)
         {
+            if(naviMapPointer == IntPtr.Zero)
+            {
+                UpdateNavMapPointer();
+            }
             unsafe
             {
                 var LocationTitle = (AtkUnitBase*)gameGui.GetAddonByName("_LocationTitle", 1);
