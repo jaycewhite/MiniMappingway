@@ -38,7 +38,7 @@ namespace MiniMappingWay
             [RequiredVersion("1.0")] SigScanner sigScanner,
             [RequiredVersion("1.0")] ClientState ClientState)
         {
-
+            NaviMapManager.Init(gameGui, sigScanner, dataManager);
 
             PluginInterface = pluginInterface;
             CommandManager = commandManager;
