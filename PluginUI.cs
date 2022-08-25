@@ -60,7 +60,6 @@ namespace MiniMappingWay
             this._clientState = clientState;
 
             clientState.TerritoryChanged+= (i,x) => { this._finderService.updateMap(); };
-            clientState.load
             updateColourArray();
         }
 
@@ -92,6 +91,10 @@ namespace MiniMappingWay
             if (!RunChecks())
             {
                 Dalamud.Logging.PluginLog.Error("RunChecks false");
+                return;
+            }
+            if (_finderService.naviMapInfo.loading)
+            {
                 return;
             }
 
@@ -149,7 +152,7 @@ namespace MiniMappingWay
 
                 var friendColour = this.configuration.friendColour;
                 ImGui.Text("Friend Colour. Click the coloured square for a picker.");
-                if (ImGui.ColorEdit4("Person", ref friendColour, ImGuiColorEditFlags.NoAlpha))
+                if (ImGui.ColorEdit4("Friend", ref friendColour, ImGuiColorEditFlags.NoAlpha))
                 {
                     this.configuration.friendColour = friendColour;
                     this.configuration.Save();
@@ -191,9 +194,10 @@ namespace MiniMappingWay
                 return false;
             }
 
+
             _finderService.LookFor();
             mapSize = new Vector2(_naviMapSize * _finderService.naviMapInfo.naviScale, _naviMapSize * _finderService.naviMapInfo.naviScale);
-            minimapRadius = mapSize.X * 0.33f;
+            minimapRadius = mapSize.X * 0.315f;
             mapPos = new Vector2(_finderService.naviMapInfo.X, _finderService.naviMapInfo.Y);
             return true;
         }
@@ -210,7 +214,7 @@ namespace MiniMappingWay
                     var relativePosZ = (_finderService.playerPos.Y - _finderService.playerPos.Y + _finderService.naviMapInfo.yOffset) * _finderService.naviMapInfo.naviScale;
                     relativePosZ = (-relativePosZ);
                     relativePosX = (-relativePosX);
-                    centerPoint = new Vector2(relativePosX + _finderService.naviMapInfo.X + mapSize.X / 2, -2 +relativePosZ + _finderService.naviMapInfo.Y + mapSize.Y / 2);
+                    centerPoint = new Vector2(relativePosX + _finderService.naviMapInfo.X + mapSize.X / 2, -3.5f +relativePosZ + _finderService.naviMapInfo.Y + mapSize.Y / 2);
                 }
 
 
@@ -247,6 +251,8 @@ namespace MiniMappingWay
 
 
                 }
+                
+                CircleData.Add(new CircleData(centerPoint, circleCategory));
 
 
 
@@ -277,6 +283,7 @@ namespace MiniMappingWay
                 ImGui.Text($"zoneScale {_finderService.naviMapInfo.zoneScale}");
                 ImGui.Text($"offsetX {_finderService.naviMapInfo.offsetX}");
                 ImGui.Text($"offsetY {_finderService.naviMapInfo.offsetY}");
+                ImGui.Text($"debug {_finderService.naviMapInfo.debugValue}");
 
                 ImGui.End();
                 CircleData.Clear();

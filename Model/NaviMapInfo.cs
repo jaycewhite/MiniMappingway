@@ -28,6 +28,9 @@ namespace MiniMappingWay.Model
 
         public short offsetY;
 
+        public bool loading;
+
+        public string? debugValue;
 
     }
 }

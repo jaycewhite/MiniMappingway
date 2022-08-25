@@ -154,7 +154,7 @@ namespace MiniMappingWay.Service
                     //iscasting currently means friend
                     if (this.configuration.showFriends)
                     {
-                        if (((StatusFlags)charPointer->StatusFlags).HasFlag(StatusFlags.OffhandOut))
+                        if (((StatusFlags)charPointer->StatusFlags).HasFlag(StatusFlags.IsCasting))
                         {
                             lock (friends)
                             {
@@ -172,7 +172,12 @@ namespace MiniMappingWay.Service
                         }
                         var tempFc = new ReadOnlySpan<byte>(charPointer->FreeCompanyTag, 7);
                         var playerFC = new ReadOnlySpan<byte>(FC, 7);
-
+                        char test = " "[0];
+                        naviMapInfo.debugValue = (FC->CompareTo(0) == 0).ToString();
+                        if (FC->CompareTo(0) == 0)
+                        {
+                            return;
+                        }
                         if (playerFC.SequenceEqual(tempFc))
                         {
                             lock (fcMembers)
@@ -193,6 +198,13 @@ namespace MiniMappingWay.Service
 
         public bool updateNaviMap()
         {
+            unsafe
+            {
+                var titleCard = (AtkUnitBase*)_gameGui.GetAddonByName("_LocationTitle", 1);
+                var blackScreen = (AtkUnitBase*)_gameGui.GetAddonByName("FadeMiddle", 1);
+                naviMapInfo.loading = titleCard != null && titleCard->IsVisible || blackScreen != null && blackScreen->IsVisible;
+            }
+
             var naviMapPtr = this._gameGui.GetAddonByName("_NaviMap", 1);
             if (naviMapPtr == IntPtr.Zero)
             {
@@ -204,7 +216,11 @@ namespace MiniMappingWay.Service
                 var naviMap = (AtkUnitBase*)naviMapPtr;
 
                 var rot = (float*)((nint)naviMap + 0x254);
-                var naviScale = (float*)((nint)naviMap + 0x24C); 
+                var naviScale = (float*)((nint)naviMap + 0x24C);
+                if(naviMap->UldManager.LoadedState != AtkLoadState.Loaded)
+                {
+                    return false;
+                }
                 try
                 {
                     naviMapInfo.rotation = *rot;
