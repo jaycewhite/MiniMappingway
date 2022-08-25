@@ -17,7 +17,7 @@ namespace MiniMappingWay.Service
     public sealed class FinderService : IDisposable, IServiceType
     {
 
-        private Configuration configuration;
+        private readonly Configuration configuration;
         private readonly GameGui _gameGui;
         private readonly ObjectTable _objectTable;
         private readonly SigScanner _sigScanner;
@@ -27,11 +27,9 @@ namespace MiniMappingWay.Service
 
         public Vector2 playerPos = new Vector2();
         public bool inCombat = false;
-
-        bool loggedIn;
-
-        IntPtr MapId1;
-        IntPtr MapId2;
+        readonly bool loggedIn;
+        readonly IntPtr MapId1;
+        readonly IntPtr MapId2;
 
 
 
@@ -40,9 +38,9 @@ namespace MiniMappingWay.Service
         public FinderService(Configuration configuration, GameGui gameGui, ObjectTable objectTable, DataManager dataManager, SigScanner sigScanner)
         {
             this.configuration = configuration;
-            this._gameGui = gameGui;
-            this._objectTable = objectTable;
-            this._sigScanner = sigScanner;
+            _gameGui = gameGui;
+            _objectTable = objectTable;
+            _sigScanner = sigScanner;
         }
 
 
@@ -53,7 +51,7 @@ namespace MiniMappingWay.Service
 
         public unsafe void LookFor()
         {
-            if (!this.configuration.showFcMembers && !this.configuration.showFriends)
+            if (!configuration.showFcMembers && !configuration.showFriends)
             {
                 return;
             }
@@ -107,7 +105,7 @@ namespace MiniMappingWay.Service
                     }
 
                     //iscasting currently means friend
-                    if (this.configuration.showFriends)
+                    if (configuration.showFriends)
                     {
                         if (((StatusFlags)charPointer->StatusFlags).HasFlag(StatusFlags.IsCasting))
                         {
@@ -119,7 +117,7 @@ namespace MiniMappingWay.Service
                         }
                     }
 
-                    if (this.configuration.showFcMembers)
+                    if (configuration.showFcMembers)
                     {
                         if (FC == null)
                         {

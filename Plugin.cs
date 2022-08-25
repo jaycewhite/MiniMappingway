@@ -40,23 +40,23 @@ namespace MiniMappingWay
         {
 
 
-            this.PluginInterface = pluginInterface;
-            this.CommandManager = commandManager;
+            PluginInterface = pluginInterface;
+            CommandManager = commandManager;
 
 
-            this.Configuration = this.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
-            this.Configuration.Initialize(this.PluginInterface);
-            this.finderService = new FinderService(this.Configuration, gameGui, objectTable, dataManager, sigScanner);
+            Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+            Configuration.Initialize(PluginInterface);
+            finderService = new FinderService(Configuration, gameGui, objectTable, dataManager, sigScanner);
 
-            this.PluginUi = new PluginUI(this.Configuration, finderService, ClientState);
+            PluginUi = new PluginUI(Configuration, finderService, ClientState);
 
-            this.CommandManager.AddHandler(commandName, new CommandInfo(OnCommand)
+            CommandManager.AddHandler(commandName, new CommandInfo(OnCommand)
             {
                 HelpMessage = "Opens Mini-Mappingway settings"
             });
 
-            this.PluginInterface.UiBuilder.Draw += DrawUI;
-            this.PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
+            PluginInterface.UiBuilder.Draw += DrawUI;
+            PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
 
             ClientState.TerritoryChanged += (i, x) => { NaviMapManager.updateOncePerZone(gameGui); };
 
@@ -65,15 +65,15 @@ namespace MiniMappingWay
 
         public void Dispose()
         {
-            this.PluginUi.Dispose();
-            this.CommandManager.RemoveHandler(commandName);
+            PluginUi.Dispose();
+            CommandManager.RemoveHandler(commandName);
         }
 
         private void OnCommand(string command, string args)
         {
             if (command != null && command == "/mmway")
             {
-                this.PluginUi.SettingsVisible = true;
+                PluginUi.SettingsVisible = true;
             }
             // in response to the slash command, just display our main ui
 
@@ -81,12 +81,12 @@ namespace MiniMappingWay
 
         private void DrawUI()
         {
-            this.PluginUi.Draw();
+            PluginUi.Draw();
         }
 
         private void DrawConfigUI()
         {
-            this.PluginUi.SettingsVisible = true;
+            PluginUi.SettingsVisible = true;
         }
     }
 }
