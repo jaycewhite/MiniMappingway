@@ -105,16 +105,17 @@ namespace MiniMappingway.Manager
             {
                 UpdateNavMapPointer();
             }
-            unsafe
-            {
-                var LocationTitle = (AtkUnitBase*)gameGui.GetAddonByName("_LocationTitle", 1);
-                var FadeMiddle = (AtkUnitBase*)gameGui.GetAddonByName("FadeMiddle", 1);
-                loading =
-                    (LocationTitle != null && LocationTitle->IsVisible) ||
-                    (FadeMiddle != null && FadeMiddle->IsVisible);
-            }
 
             updateMap();
+        }
+
+        public unsafe static void CheckIfLoading()
+        {
+            var LocationTitle = (AtkUnitBase*)gameGui.GetAddonByName("_LocationTitle", 1);
+            var FadeMiddle = (AtkUnitBase*)gameGui.GetAddonByName("FadeMiddle", 1);
+            loading =
+                (LocationTitle != null && LocationTitle->IsVisible) ||
+                (FadeMiddle != null && FadeMiddle->IsVisible);
         }
 
         public static void updateMap()

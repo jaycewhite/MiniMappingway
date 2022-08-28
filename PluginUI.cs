@@ -187,6 +187,7 @@ namespace MiniMappingWay
             {
                 return false;
             }
+            NaviMapManager.CheckIfLoading();
 
 
             _finderService.LookFor();
