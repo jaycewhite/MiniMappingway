@@ -84,7 +84,6 @@ namespace MiniMappingWay
 
             if (!RunChecks())
             {
-                Dalamud.Logging.PluginLog.Error("RunChecks false");
                 return;
             }
             if (NaviMapManager.loading)
