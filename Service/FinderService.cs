@@ -102,10 +102,16 @@ namespace MiniMappingWay.Service
                     {
                         return;
                     }
+                    if (((StatusFlags)charPointer->StatusFlags).HasFlag(StatusFlags.AllianceMember))
+                    {
+                        return;
+                    }
 
                     //iscasting currently means friend
                     if (configuration.showFriends)
                     {
+
+
                         if (((StatusFlags)charPointer->StatusFlags).HasFlag(StatusFlags.IsCasting))
                         {
                             lock (friends)
