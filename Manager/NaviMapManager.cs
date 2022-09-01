@@ -8,61 +8,57 @@ using System;
 
 namespace MiniMappingway.Manager
 {
-    internal static class NaviMapManager
+    public class NaviMapManager
     {
-        public static int X;
+        public int X;
 
-        public static int Y;
+        public int Y;
 
-        public static int yOffset = +1;
+        public int yOffset = +1;
 
-        public static float naviScale;
+        public float naviScale;
 
-        public static float zoneScale;
+        public float zoneScale;
 
-        public static float rotation;
+        public float rotation;
 
-        public static bool visible;
+        public bool visible;
 
-        public static float zoom;
+        public float zoom;
 
-        public static short offsetX;
+        public short offsetX;
 
-        public static short offsetY;
+        public short offsetY;
 
-        public static bool loading;
+        public bool loading;
 
-        public static string? debugValue;
+        public string? debugValue;
 
-        public static IntPtr naviMapPointer = IntPtr.Zero;
+        public IntPtr naviMapPointer = IntPtr.Zero;
 
-        public static ExcelSheet<Map>? Maps;
+        public ExcelSheet<Map>? Maps;
 
-        public static IntPtr MapSig1;
+        public IntPtr MapSig1;
 
-        public static IntPtr MapSig2;
+        public IntPtr MapSig2;
 
-        private static GameGui? gameGui;
-
-
-        public static void Init(GameGui _gameGui, SigScanner sigScanner, DataManager dataManager)
+        public NaviMapManager()
         {
-            gameGui = _gameGui;
-            MapSig1 = sigScanner.GetStaticAddressFromSig("44 8B 3D ?? ?? ?? ?? 45 85 FF");
-            MapSig2 = sigScanner.GetStaticAddressFromSig("44 0F 44 3D ?? ?? ?? ??");
+            MapSig1 = ServiceManager.SigScanner.GetStaticAddressFromSig("44 8B 3D ?? ?? ?? ?? 45 85 FF");
+            MapSig2 = ServiceManager.SigScanner.GetStaticAddressFromSig("44 0F 44 3D ?? ?? ?? ??");
             UpdateNavMapPointer();
-            Maps = dataManager.GetExcelSheet<Map>();
+            Maps = ServiceManager.DataManager.GetExcelSheet<Map>();
             updateNaviMap();
             updateMap();
         }
 
-        public static void UpdateNavMapPointer()
+        public void UpdateNavMapPointer()
         {
-            if(gameGui == null) { return; }
-            naviMapPointer = gameGui.GetAddonByName("_NaviMap", 1);
+            if(ServiceManager.GameGui == null) { return; }
+            naviMapPointer = ServiceManager.GameGui.GetAddonByName("_NaviMap", 1);
         }
 
-        public static bool updateNaviMap()
+        public bool updateNaviMap()
         {
 
             if (naviMapPointer == IntPtr.Zero)
@@ -99,7 +95,7 @@ namespace MiniMappingway.Manager
             return true;
         }
 
-        public static void updateOncePerZone(GameGui gameGui)
+        public void updateOncePerZone()
         {
             if(naviMapPointer == IntPtr.Zero)
             {
@@ -109,16 +105,16 @@ namespace MiniMappingway.Manager
             updateMap();
         }
 
-        public unsafe static void CheckIfLoading()
+        public unsafe void CheckIfLoading()
         {
-            var LocationTitle = (AtkUnitBase*)gameGui.GetAddonByName("_LocationTitle", 1);
-            var FadeMiddle = (AtkUnitBase*)gameGui.GetAddonByName("FadeMiddle", 1);
+            var LocationTitle = (AtkUnitBase*)ServiceManager.GameGui.GetAddonByName("_LocationTitle", 1);
+            var FadeMiddle = (AtkUnitBase*)ServiceManager.GameGui.GetAddonByName("FadeMiddle", 1);
             loading =
                 (LocationTitle != null && LocationTitle->IsVisible) ||
                 (FadeMiddle != null && FadeMiddle->IsVisible);
         }
 
-        public static void updateMap()
+        public void updateMap()
         {
             if (Maps != null)
             {
@@ -138,7 +134,7 @@ namespace MiniMappingway.Manager
             }
         }
 
-        private unsafe static uint getMapId()
+        private unsafe uint getMapId()
         {
             try
             {

@@ -1,23 +1,18 @@
-﻿using Dalamud.Game.ClientState;
-using Dalamud.Game.ClientState.Objects.Types;
+﻿using Dalamud.Game.ClientState.Objects.Types;
 using ImGuiNET;
 using MiniMappingway.Manager;
 using MiniMappingway.Model;
-using MiniMappingWay.Service;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
 
 
-namespace MiniMappingWay
+namespace MiniMappingway
 {
     // It is good to have this be disposable in general, in case you ever need it
     // to do any cleanup
-    class PluginUI : IDisposable
+    public class PluginUI : IDisposable
     {
-        private readonly Configuration configuration;
-        private readonly FinderService _finderService;
-        private readonly ClientState _clientState;
 
         public List<CircleData> CircleData = new List<CircleData>();
         private readonly int _naviMapSize = 218;
@@ -27,9 +22,6 @@ namespace MiniMappingWay
         Vector2 mapPos = new Vector2();
         readonly uint[] Colours = new uint[2];
         float minimapRadius;
-
-
-
 
         // this extra bool exists for ImGui, since you can't ref a property
         private bool visible = false;
@@ -46,21 +38,15 @@ namespace MiniMappingWay
             set { settingsVisible = value; }
         }
 
-        public PluginUI(Configuration configuration, FinderService finderService, ClientState clientState)
+        public PluginUI()
         {
-            this.configuration = configuration;
-            _finderService = finderService;
-            _clientState = clientState;
-
             updateColourArray();
         }
 
-
-
         public void updateColourArray()
         {
-            Colours[0] = ImGui.ColorConvertFloat4ToU32(configuration.friendColour);
-            Colours[1] = ImGui.ColorConvertFloat4ToU32(configuration.fcColour);
+            Colours[0] = ImGui.ColorConvertFloat4ToU32(ServiceManager.Configuration.friendColour);
+            Colours[1] = ImGui.ColorConvertFloat4ToU32(ServiceManager.Configuration.fcColour);
         }
 
         public void Dispose()
@@ -72,12 +58,12 @@ namespace MiniMappingWay
             DrawSettingsWindow();
 
 
-            if (!configuration.enabled)
+            if (!ServiceManager.Configuration.enabled)
             {
                 return;
             }
 
-            if (!_clientState.IsLoggedIn)
+            if (!ServiceManager.ClientState.IsLoggedIn)
             {
                 return;
             }
@@ -86,18 +72,18 @@ namespace MiniMappingWay
             {
                 return;
             }
-            if (NaviMapManager.loading)
+            if (ServiceManager.NaviMapManager.loading)
             {
                 return;
             }
 
-            if (configuration.showFcMembers)
+            if (ServiceManager.Configuration.showFcMembers)
             {
-                PrepareDrawOnMinimap(_finderService.fcMembers, CircleCategory.fc);
+                PrepareDrawOnMinimap(ServiceManager.FinderService.fcMembers, CircleCategory.fc);
             }
-            if (configuration.showFriends)
+            if (ServiceManager.Configuration.showFriends)
             {
-                PrepareDrawOnMinimap(_finderService.friends, CircleCategory.friend);
+                PrepareDrawOnMinimap(ServiceManager.FinderService.friends, CircleCategory.friend);
             }
 
             DoDraw();
@@ -114,60 +100,60 @@ namespace MiniMappingWay
             if (ImGui.Begin("Mini-Mappingway Settings", ref settingsVisible, ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
             {
                 // can't ref a property, so use a local copy
-                var enabled = configuration.enabled;
+                var enabled = ServiceManager.Configuration.enabled;
                 if (ImGui.Checkbox("Enabled", ref enabled))
                 {
-                    configuration.enabled = enabled;
-                    configuration.Save();
+                    ServiceManager.Configuration.enabled = enabled;
+                    ServiceManager.Configuration.Save();
                 }
 
-                var showFriends = configuration.showFriends;
+                var showFriends = ServiceManager.Configuration.showFriends;
                 if (ImGui.Checkbox("Show friends on minimap", ref showFriends))
                 {
-                    configuration.showFriends = showFriends;
-                    configuration.Save();
+                    ServiceManager.Configuration.showFriends = showFriends;
+                    ServiceManager.Configuration.Save();
                 }
 
-                var showFcMembers = configuration.showFcMembers;
+                var showFcMembers = ServiceManager.Configuration.showFcMembers;
                 if (ImGui.Checkbox("Show FC Members on minimap", ref showFcMembers))
                 {
-                    configuration.showFcMembers = showFcMembers;
-                    configuration.Save();
+                    ServiceManager.Configuration.showFcMembers = showFcMembers;
+                    ServiceManager.Configuration.Save();
                 }
 
-                var minimapLocked = configuration.minimapLocked;
+                var minimapLocked = ServiceManager.Configuration.minimapLocked;
                 ImGui.Text("Set this if your minimap always faces north");
                 if (ImGui.Checkbox("Minimap Locked", ref minimapLocked))
                 {
-                    configuration.minimapLocked = minimapLocked;
-                    configuration.Save();
+                    ServiceManager.Configuration.minimapLocked = minimapLocked;
+                    ServiceManager.Configuration.Save();
                 }
 
-                var friendColour = configuration.friendColour;
+                var friendColour = ServiceManager.Configuration.friendColour;
                 ImGui.Text("Friend Colour. Click the coloured square for a picker.");
                 if (ImGui.ColorEdit4("Friend", ref friendColour, ImGuiColorEditFlags.NoAlpha))
                 {
-                    configuration.friendColour = friendColour;
-                    configuration.Save();
+                    ServiceManager.Configuration.friendColour = friendColour;
+                    ServiceManager.Configuration.Save();
                     updateColourArray();
 
                 }
 
-                var fcColour = configuration.fcColour;
+                var fcColour = ServiceManager.Configuration.fcColour;
                 ImGui.Text("FC Colour. Click the coloured square for a picker.");
                 if (ImGui.ColorEdit4("FC", ref fcColour, ImGuiColorEditFlags.NoAlpha))
                 {
-                    configuration.fcColour = fcColour;
-                    configuration.Save();
+                    ServiceManager.Configuration.fcColour = fcColour;
+                    ServiceManager.Configuration.Save();
                     updateColourArray();
 
                 }
 
-                var circleSize = configuration.circleSize;
+                var circleSize = ServiceManager.Configuration.circleSize;
                 if (ImGui.SliderInt("Circle Size", ref circleSize, 1, 20))
                 {
-                    configuration.circleSize = circleSize;
-                    configuration.Save();
+                    ServiceManager.Configuration.circleSize = circleSize;
+                    ServiceManager.Configuration.Save();
                 }
 
             }
@@ -177,22 +163,22 @@ namespace MiniMappingWay
         public bool RunChecks()
         {
 
-            if (!configuration.enabled)
+            if (!ServiceManager.Configuration.enabled)
             {
                 return false;
 
             }
-            if (!NaviMapManager.updateNaviMap())
+            if (!ServiceManager.NaviMapManager.updateNaviMap())
             {
                 return false;
             }
-            NaviMapManager.CheckIfLoading();
+            ServiceManager.NaviMapManager.CheckIfLoading();
 
 
-            _finderService.LookFor();
-            mapSize = new Vector2(_naviMapSize * NaviMapManager.naviScale, _naviMapSize * NaviMapManager.naviScale);
+            ServiceManager.FinderService.LookFor();
+            mapSize = new Vector2(_naviMapSize * ServiceManager.NaviMapManager.naviScale, _naviMapSize * ServiceManager.NaviMapManager.naviScale);
             minimapRadius = mapSize.X * 0.315f;
-            mapPos = new Vector2(NaviMapManager.X, NaviMapManager.Y);
+            mapPos = new Vector2(ServiceManager.NaviMapManager.X, ServiceManager.NaviMapManager.Y);
             return true;
         }
 
@@ -201,24 +187,24 @@ namespace MiniMappingWay
 
             if (list.Count > 0)
             {
-                var PlayerRelativePosX = (_finderService.playerPos.X - _finderService.playerPos.X) * NaviMapManager.naviScale;
-                var PlayerRelativePosZ = (_finderService.playerPos.Y - _finderService.playerPos.Y + NaviMapManager.yOffset) * NaviMapManager.naviScale;
+                var PlayerRelativePosX = (ServiceManager.FinderService.playerPos.X - ServiceManager.FinderService.playerPos.X) * ServiceManager.NaviMapManager.naviScale;
+                var PlayerRelativePosZ = (ServiceManager.FinderService.playerPos.Y - ServiceManager.FinderService.playerPos.Y + ServiceManager.NaviMapManager.yOffset) * ServiceManager.NaviMapManager.naviScale;
                 PlayerRelativePosZ = (-PlayerRelativePosZ);
                 PlayerRelativePosX = (-PlayerRelativePosX);
-                centerPoint = new Vector2(PlayerRelativePosX + NaviMapManager.X + mapSize.X / 2, -3.5f + PlayerRelativePosZ + NaviMapManager.Y + mapSize.Y / 2);
+                centerPoint = new Vector2(PlayerRelativePosX + ServiceManager.NaviMapManager.X + mapSize.X / 2, -3.5f + PlayerRelativePosZ + ServiceManager.NaviMapManager.Y + mapSize.Y / 2);
 
                 foreach (var person in list)
                 {
-                    var relativePosX = (_finderService.playerPos.X - person.Position.X) * NaviMapManager.naviScale;
-                    var relativePosZ = (_finderService.playerPos.Y - person.Position.Z + NaviMapManager.yOffset) * NaviMapManager.naviScale;
-                    relativePosZ = (-relativePosZ) * NaviMapManager.zoneScale * NaviMapManager.zoom;
-                    relativePosX = (-relativePosX) * NaviMapManager.zoneScale * NaviMapManager.zoom;
-                    var circlePos = new Vector2(relativePosX + NaviMapManager.X + mapSize.X / 2, relativePosZ + NaviMapManager.Y + mapSize.Y / 2);
+                    var relativePosX = (ServiceManager.FinderService.playerPos.X - person.Position.X) * ServiceManager.NaviMapManager.naviScale;
+                    var relativePosZ = (ServiceManager.FinderService.playerPos.Y - person.Position.Z + ServiceManager.NaviMapManager.yOffset) * ServiceManager.NaviMapManager.naviScale;
+                    relativePosZ = (-relativePosZ) * ServiceManager.NaviMapManager.zoneScale * ServiceManager.NaviMapManager.zoom;
+                    relativePosX = (-relativePosX) * ServiceManager.NaviMapManager.zoneScale * ServiceManager.NaviMapManager.zoom;
+                    var circlePos = new Vector2(relativePosX + ServiceManager.NaviMapManager.X + mapSize.X / 2, relativePosZ + ServiceManager.NaviMapManager.Y + mapSize.Y / 2);
 
 
-                    if (!configuration.minimapLocked)
+                    if (!ServiceManager.Configuration.minimapLocked)
                     {
-                        circlePos = RotateForMiniMap(centerPoint, circlePos, (int)NaviMapManager.rotation);
+                        circlePos = RotateForMiniMap(centerPoint, circlePos, (int)ServiceManager.NaviMapManager.rotation);
                     }
 
                     var distance = Vector2.Distance(centerPoint, circlePos);
@@ -246,16 +232,16 @@ namespace MiniMappingWay
 
                 CircleData.ForEach(circle =>
                 {
-                    draw_list.AddCircleFilled(circle.Position, configuration.circleSize, Colours[(int)circle.Category]);
+                    draw_list.AddCircleFilled(circle.Position, ServiceManager.Configuration.circleSize, Colours[(int)circle.Category]);
 
                 });
 #if (DEBUG)
-                ImGui.Text($"zoom {NaviMapManager.zoom}");
-                ImGui.Text($"naviScale {NaviMapManager.naviScale}");
-                ImGui.Text($"zoneScale {NaviMapManager.zoneScale}");
-                ImGui.Text($"offsetX {NaviMapManager.offsetX}");
-                ImGui.Text($"offsetY {NaviMapManager.offsetY}");
-                ImGui.Text($"debug {NaviMapManager.debugValue}");
+                ImGui.Text($"zoom {ServiceManager.NaviMapManager.zoom}");
+                ImGui.Text($"naviScale {ServiceManager.NaviMapManager.naviScale}");
+                ImGui.Text($"zoneScale {ServiceManager.NaviMapManager.zoneScale}");
+                ImGui.Text($"offsetX {ServiceManager.NaviMapManager.offsetX}");
+                ImGui.Text($"offsetY {ServiceManager.NaviMapManager.offsetY}");
+                ImGui.Text($"debug {ServiceManager.NaviMapManager.debugValue}");
 #endif
 
                 ImGui.End();

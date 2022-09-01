@@ -8,10 +8,8 @@ using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.IoC;
 using Dalamud.Plugin;
-using MiniMappingway.Manager;
-using MiniMappingWay.Service;
 
-namespace MiniMappingWay
+namespace MiniMappingway
 {
     public sealed class Plugin : IDalamudPlugin
     {
@@ -22,57 +20,52 @@ namespace MiniMappingWay
 
         public delegate void OnMessageDelegate(XivChatType type, uint senderId, ref SeString sender, ref SeString message, ref bool isHandled);
 
-        private DalamudPluginInterface PluginInterface { get; init; }
-        private CommandManager CommandManager { get; init; }
-        private Configuration Configuration { get; init; }
-        private PluginUI PluginUi { get; init; }
-        private FinderService finderService { get; init; }
-
         public Plugin(
-            [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
-            [RequiredVersion("1.0")] CommandManager commandManager,
-            [RequiredVersion("1.0")] GameGui gameGui,
-            [RequiredVersion("1.0")] ObjectTable objectTable,
-            [RequiredVersion("1.0")] DataManager dataManager,
-            [RequiredVersion("1.0")] SigScanner sigScanner,
-            [RequiredVersion("1.0")] ClientState ClientState)
+            [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface)
         {
-            NaviMapManager.Init(gameGui, sigScanner, dataManager);
+            pluginInterface.Create<ServiceManager>();
 
-            PluginInterface = pluginInterface;
-            CommandManager = commandManager;
+            ServiceManager.Configuration = ServiceManager.DalamudPluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
 
+            #region Initialise Managers
 
-            Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
-            Configuration.Initialize(PluginInterface);
-            finderService = new FinderService(Configuration, gameGui, objectTable, dataManager, sigScanner);
+            ServiceManager.NaviMapManager = new();
+            ServiceManager.PluginUi = new();
+            ServiceManager.WindowManager = new();
 
-            PluginUi = new PluginUI(Configuration, finderService, ClientState);
+            #endregion
 
-            CommandManager.AddHandler(commandName, new CommandInfo(OnCommand)
+            #region Initialise Services
+
+            ServiceManager.FinderService = new();
+
+            #endregion
+
+            #region Setup Commands and Actions
+
+            ServiceManager.CommandManager.AddHandler(commandName, new CommandInfo(OnCommand)
             {
                 HelpMessage = "Opens Mini-Mappingway settings"
             });
 
-            PluginInterface.UiBuilder.Draw += DrawUI;
-            PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
+            ServiceManager.DalamudPluginInterface.UiBuilder.Draw += DrawUI;
+            ServiceManager.DalamudPluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
 
-            ClientState.TerritoryChanged += (i, x) => { NaviMapManager.updateOncePerZone(gameGui); };
+            ServiceManager.ClientState.TerritoryChanged += (i, x) => { ServiceManager.NaviMapManager.updateOncePerZone(); };
 
-
+            #endregion
         }
 
         public void Dispose()
         {
-            PluginUi.Dispose();
-            CommandManager.RemoveHandler(commandName);
+            ServiceManager.CommandManager.RemoveHandler(commandName);
         }
 
         private void OnCommand(string command, string args)
         {
             if (command != null && command == "/mmway")
             {
-                PluginUi.SettingsVisible = true;
+                ServiceManager.PluginUi.SettingsVisible = true;
             }
             // in response to the slash command, just display our main ui
 
@@ -80,12 +73,12 @@ namespace MiniMappingWay
 
         private void DrawUI()
         {
-            PluginUi.Draw();
+            ServiceManager.PluginUi.Draw();
         }
 
         private void DrawConfigUI()
         {
-            PluginUi.SettingsVisible = true;
+            ServiceManager.PluginUi.SettingsVisible = true;
         }
     }
 }

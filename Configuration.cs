@@ -3,7 +3,7 @@ using Dalamud.Plugin;
 using System;
 using System.Numerics;
 
-namespace MiniMappingWay
+namespace MiniMappingway
 {
     [Serializable]
     public class Configuration : IPluginConfiguration

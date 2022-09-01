@@ -1,9 +1,4 @@
-﻿using Dalamud;
-using Dalamud.Data;
-using Dalamud.Game;
-using Dalamud.Game.ClientState.Objects;
-using Dalamud.Game.ClientState.Objects.Enums;
-using Dalamud.Game.Gui;
+﻿using Dalamud.Game.ClientState.Objects.Enums;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using MiniMappingway.Manager;
 using System;
@@ -12,43 +7,19 @@ using System.Numerics;
 using System.Threading.Tasks;
 using Types = Dalamud.Game.ClientState.Objects.Types;
 
-namespace MiniMappingWay.Service
+namespace MiniMappingway.Service
 {
-    public sealed class FinderService : IDisposable, IServiceType
+    public sealed class FinderService : IDisposable
     {
-
-        private readonly Configuration configuration;
-        private readonly GameGui _gameGui;
-        private readonly ObjectTable _objectTable;
-        private readonly SigScanner _sigScanner;
-
         public List<Types.GameObject> friends = new List<Types.GameObject>();
         public List<Types.GameObject> fcMembers = new List<Types.GameObject>();
 
         public Vector2 playerPos = new Vector2();
         public bool inCombat = false;
 
-
-
-
-
-        public FinderService(Configuration configuration, GameGui gameGui, ObjectTable objectTable, DataManager dataManager, SigScanner sigScanner)
-        {
-            this.configuration = configuration;
-            _gameGui = gameGui;
-            _objectTable = objectTable;
-            _sigScanner = sigScanner;
-        }
-
-
-
-
-
-
-
         public unsafe void LookFor()
         {
-            if (!configuration.showFcMembers && !configuration.showFriends)
+            if (!ServiceManager.Configuration.showFcMembers && !ServiceManager.Configuration.showFriends)
             {
                 return;
             }
@@ -59,7 +30,7 @@ namespace MiniMappingWay.Service
 
 
             byte* FC = null;
-            if (_objectTable == null || _objectTable.Length <= 0)
+            if (ServiceManager.ObjectTable == null || ServiceManager.ObjectTable.Length <= 0)
             {
                 return;
             }
@@ -68,10 +39,10 @@ namespace MiniMappingWay.Service
 
                 unsafe
                 {
-                    if(_objectTable[0] is null) {
+                    if(ServiceManager.ObjectTable[0] is null) {
                         return;
                     }
-                    var player = (Character*)_objectTable[0].Address;
+                    var player = (Character*)ServiceManager.ObjectTable[0].Address;
                     playerPos = new Vector2(player->GameObject.Position.X, player->GameObject.Position.Z);
 
                     if (((StatusFlags)player->StatusFlags).HasFlag(StatusFlags.InCombat))
@@ -89,9 +60,9 @@ namespace MiniMappingWay.Service
 
             }
 
-            Parallel.For(1, _objectTable.Length, (i, state) =>
+            Parallel.For(1, ServiceManager.ObjectTable.Length, (i, state) =>
             {
-                var obj = _objectTable[i];
+                var obj = ServiceManager.ObjectTable[i];
 
                 if (obj == null) { return; }
                 unsafe
@@ -108,7 +79,7 @@ namespace MiniMappingWay.Service
                     }
 
                     //iscasting currently means friend
-                    if (configuration.showFriends)
+                    if (ServiceManager.Configuration.showFriends)
                     {
 
 
@@ -122,7 +93,7 @@ namespace MiniMappingWay.Service
                         }
                     }
 
-                    if (configuration.showFcMembers)
+                    if (ServiceManager.Configuration.showFcMembers)
                     {
                         if (FC == null)
                         {
@@ -130,7 +101,7 @@ namespace MiniMappingWay.Service
                         }
                         var tempFc = new ReadOnlySpan<byte>(charPointer->FreeCompanyTag, 7);
                         var playerFC = new ReadOnlySpan<byte>(FC, 7);
-                        NaviMapManager.debugValue = (FC->CompareTo(0) == 0).ToString();
+                        ServiceManager.NaviMapManager.debugValue = (FC->CompareTo(0) == 0).ToString();
                         if (FC->CompareTo(0) == 0)
                         {
                             return;
@@ -148,16 +119,10 @@ namespace MiniMappingWay.Service
 
         }
 
-
         public void Dispose()
         {
             throw new NotImplementedException();
         }
-
-
-
-
-
 
     }
 }
