@@ -11,6 +11,14 @@ namespace MiniMappingway.Manager
 
         public WindowManager()
         {
+            
+        }
+
+        public void AddWindowsToWindowSystem()
+        {
+            Dalamud.Logging.PluginLog.Verbose("Adding Windows To Window System");
+
+            ServiceManager.WindowSystem.AddWindow(naviMapWindow);
         }
 
         public void Dispose()

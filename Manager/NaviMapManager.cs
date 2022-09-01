@@ -2,9 +2,12 @@
 using Dalamud.Game;
 using Dalamud.Game.Gui;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using ImGuiNET;
 using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
+using MiniMappingway.Model;
 using System;
+using System.Collections.Generic;
 
 namespace MiniMappingway.Manager
 {
@@ -42,6 +45,10 @@ namespace MiniMappingway.Manager
 
         public IntPtr MapSig2;
 
+        public List<CircleData> CircleData = new List<CircleData>();
+
+        public uint[] Colours = new uint[2];
+
         public NaviMapManager()
         {
             MapSig1 = ServiceManager.SigScanner.GetStaticAddressFromSig("44 8B 3D ?? ?? ?? ?? 45 85 FF");
@@ -50,6 +57,13 @@ namespace MiniMappingway.Manager
             Maps = ServiceManager.DataManager.GetExcelSheet<Map>();
             updateNaviMap();
             updateMap();
+            updateColourArray();
+        }
+
+        public void updateColourArray()
+        {
+            Colours[0] = ImGui.ColorConvertFloat4ToU32(ServiceManager.Configuration.friendColour);
+            Colours[1] = ImGui.ColorConvertFloat4ToU32(ServiceManager.Configuration.fcColour);
         }
 
         public void UpdateNavMapPointer()
@@ -89,7 +103,7 @@ namespace MiniMappingway.Manager
                 X = _naviMapPtr->X;
                 Y = _naviMapPtr->Y;
                 naviScale = _naviMapPtr->Scale;
-                visible = _naviMapPtr->IsVisible;
+                visible = ((_naviMapPtr->VisibilityFlags & 0x03) == 0);
             }
 
             return true;
@@ -97,8 +111,11 @@ namespace MiniMappingway.Manager
 
         public void updateOncePerZone()
         {
-            if(naviMapPointer == IntPtr.Zero)
+            Dalamud.Logging.PluginLog.Verbose($"{naviMapPointer == IntPtr.Zero}");
+            if (naviMapPointer == IntPtr.Zero)
             {
+                Dalamud.Logging.PluginLog.Verbose("Updating NavMapPointer");
+
                 UpdateNavMapPointer();
             }
 
@@ -118,6 +135,8 @@ namespace MiniMappingway.Manager
         {
             if (Maps != null)
             {
+                Dalamud.Logging.PluginLog.Verbose("Updating Map");
+
                 var map = Maps.GetRow(getMapId());
                 if (map == null) { return; }
                 if (map.SizeFactor != 0)

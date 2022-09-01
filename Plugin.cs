@@ -26,6 +26,7 @@ namespace MiniMappingway
             pluginInterface.Create<ServiceManager>();
 
             ServiceManager.Configuration = ServiceManager.DalamudPluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+            ServiceManager.Configuration.Initialize(ServiceManager.DalamudPluginInterface);
 
             #region Initialise Managers
 
@@ -41,14 +42,17 @@ namespace MiniMappingway
 
             #endregion
 
+            ServiceManager.WindowManager.AddWindowsToWindowSystem();
+
             #region Setup Commands and Actions
 
             ServiceManager.CommandManager.AddHandler(commandName, new CommandInfo(OnCommand)
             {
                 HelpMessage = "Opens Mini-Mappingway settings"
             });
-
             ServiceManager.DalamudPluginInterface.UiBuilder.Draw += DrawUI;
+
+            ServiceManager.DalamudPluginInterface.UiBuilder.Draw += ServiceManager.WindowSystem.Draw;
             ServiceManager.DalamudPluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
 
             ServiceManager.ClientState.TerritoryChanged += (i, x) => { ServiceManager.NaviMapManager.updateOncePerZone(); };
@@ -63,6 +67,8 @@ namespace MiniMappingway
 
         private void OnCommand(string command, string args)
         {
+            Dalamud.Logging.PluginLog.Verbose("Command received");
+
             if (command != null && command == "/mmway")
             {
                 ServiceManager.PluginUi.SettingsVisible = true;
@@ -73,11 +79,11 @@ namespace MiniMappingway
 
         private void DrawUI()
         {
-            ServiceManager.PluginUi.Draw();
+            ServiceManager.PluginUi.DrawSettingsWindow();
         }
-
         private void DrawConfigUI()
         {
+            Dalamud.Logging.PluginLog.Verbose("Draw config ui on");
             ServiceManager.PluginUi.SettingsVisible = true;
         }
     }
