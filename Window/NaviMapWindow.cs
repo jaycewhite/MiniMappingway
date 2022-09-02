@@ -30,12 +30,11 @@ namespace MiniMappingway.Window
             Dalamud.Logging.PluginLog.Verbose("Created NaviMapWindow Object");
         }
 
-        public override void Draw()
+        public unsafe override void Draw()
         {
-            Dalamud.Logging.PluginLog.Verbose($"{ServiceManager.NaviMapManager.CircleData[0].Position}");
 
             ImDrawListPtr draw_list = ImGui.GetWindowDrawList();
-
+            //Dalamud.Logging.PluginLog.Verbose($"{ServiceManager.NaviMapManager.CircleData[0].Position + windowLocation}");
             ServiceManager.NaviMapManager.CircleData.ForEach(circle =>
             {
                 draw_list.AddCircleFilled(circle.Position, ServiceManager.Configuration.circleSize, ServiceManager.NaviMapManager.Colours[(int)circle.Category]);
@@ -112,21 +111,24 @@ namespace MiniMappingway.Window
         public void PrepareDrawOnMinimap(List<GameObject> list, CircleCategory circleCategory)
         {
 
+            var windowLocation = ImGui.GetWindowPos();
             if (list.Count > 0)
             {
                 var PlayerRelativePosX = (ServiceManager.FinderService.playerPos.X - ServiceManager.FinderService.playerPos.X) * ServiceManager.NaviMapManager.naviScale;
                 var PlayerRelativePosZ = (ServiceManager.FinderService.playerPos.Y - ServiceManager.FinderService.playerPos.Y + ServiceManager.NaviMapManager.yOffset) * ServiceManager.NaviMapManager.naviScale;
                 PlayerRelativePosZ = (-PlayerRelativePosZ);
                 PlayerRelativePosX = (-PlayerRelativePosX);
-                centerPoint = new Vector2(PlayerRelativePosX + ServiceManager.NaviMapManager.X + mapSize.X / 2, -3.5f + PlayerRelativePosZ + ServiceManager.NaviMapManager.Y + mapSize.Y / 2);
+                
+                centerPoint = new Vector2(PlayerRelativePosX + ServiceManager.NaviMapManager.X + windowLocation.X + mapSize.X / 2, -3.5f + PlayerRelativePosZ + ServiceManager.NaviMapManager.Y + windowLocation.Y + mapSize.Y / 2);
 
+                Dalamud.Logging.PluginLog.Verbose($"{centerPoint}");
                 foreach (var person in list)
                 {
                     var relativePosX = (ServiceManager.FinderService.playerPos.X - person.Position.X) * ServiceManager.NaviMapManager.naviScale;
                     var relativePosZ = (ServiceManager.FinderService.playerPos.Y - person.Position.Z + ServiceManager.NaviMapManager.yOffset) * ServiceManager.NaviMapManager.naviScale;
                     relativePosZ = (-relativePosZ) * ServiceManager.NaviMapManager.zoneScale * ServiceManager.NaviMapManager.zoom;
                     relativePosX = (-relativePosX) * ServiceManager.NaviMapManager.zoneScale * ServiceManager.NaviMapManager.zoom;
-                    var circlePos = new Vector2(relativePosX + ServiceManager.NaviMapManager.X + mapSize.X / 2, relativePosZ + ServiceManager.NaviMapManager.Y + mapSize.Y / 2);
+                    var circlePos = new Vector2(relativePosX + ServiceManager.NaviMapManager.X + windowLocation.X + mapSize.X / 2, relativePosZ + ServiceManager.NaviMapManager.Y + windowLocation.Y + mapSize.Y / 2);
 
 
                     if (!ServiceManager.Configuration.minimapLocked)
@@ -146,7 +148,7 @@ namespace MiniMappingway.Window
                 }
 
                 //for debugging center point
-                //CircleData.Add(new CircleData(centerPoint, circleCategory));
+                //ServiceManager.NaviMapManager.CircleData.Add(new CircleData(centerPoint, circleCategory));
             }
         }
 
