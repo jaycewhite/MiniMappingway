@@ -120,7 +120,6 @@ namespace MiniMappingway.Window
                 
                 centerPoint = new Vector2(PlayerRelativePosX + ServiceManager.NaviMapManager.X + windowLocation.X + mapSize.X / 2, -3.5f + PlayerRelativePosZ + ServiceManager.NaviMapManager.Y + windowLocation.Y + mapSize.Y / 2);
 
-                Dalamud.Logging.PluginLog.Verbose($"{centerPoint}");
                 foreach (var person in list)
                 {
                     var relativePosX = (ServiceManager.FinderService.playerPos.X - person.Position.X) * ServiceManager.NaviMapManager.naviScale;

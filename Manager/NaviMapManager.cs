@@ -111,7 +111,6 @@ namespace MiniMappingway.Manager
 
         public void updateOncePerZone()
         {
-            Dalamud.Logging.PluginLog.Verbose($"{naviMapPointer == IntPtr.Zero}");
             if (naviMapPointer == IntPtr.Zero)
             {
                 Dalamud.Logging.PluginLog.Verbose("Updating NavMapPointer");
