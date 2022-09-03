@@ -44,8 +44,6 @@ namespace MiniMappingway.Service
                     }
                     var player = (Character*)ServiceManager.ObjectTable[0].Address;
                     playerPos = new Vector2(player->GameObject.Position.X, player->GameObject.Position.Z);
-                    Dalamud.Logging.PluginLog.Verbose($"player {player->GameObject.Position.X}, {player->GameObject.Position.Z}");
-
 
                     if (((StatusFlags)player->StatusFlags).HasFlag(StatusFlags.InCombat))
                     {
