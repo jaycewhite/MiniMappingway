@@ -55,7 +55,7 @@ namespace MiniMappingway
             ServiceManager.DalamudPluginInterface.UiBuilder.Draw += ServiceManager.WindowSystem.Draw;
             ServiceManager.DalamudPluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
 
-            ServiceManager.ClientState.TerritoryChanged += (i, x) => { ServiceManager.NaviMapManager.updateOncePerZone(); };
+            ServiceManager.ClientState.TerritoryChanged += (i, x) => { ServiceManager.NaviMapManager.updateMap(); };
 
             #endregion
         }
