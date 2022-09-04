@@ -8,6 +8,7 @@ using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.IoC;
 using Dalamud.Plugin;
+using ImGuiNET;
 
 namespace MiniMappingway
 {
@@ -16,6 +17,7 @@ namespace MiniMappingway
         public string Name => "Mini-Mappingway";
 
         private const string commandName = "/mmway";
+        private const string commandNameDebug = "/mmwaydebug";
 
 
         public delegate void OnMessageDelegate(XivChatType type, uint senderId, ref SeString sender, ref SeString message, ref bool isHandled);
@@ -50,6 +52,11 @@ namespace MiniMappingway
             {
                 HelpMessage = "Opens Mini-Mappingway settings"
             });
+
+            ServiceManager.CommandManager.AddHandler(commandNameDebug, new CommandInfo(OnCommand)
+            {
+                
+            });
             ServiceManager.DalamudPluginInterface.UiBuilder.Draw += DrawUI;
 
             ServiceManager.DalamudPluginInterface.UiBuilder.Draw += ServiceManager.WindowSystem.Draw;
@@ -63,6 +70,7 @@ namespace MiniMappingway
         public void Dispose()
         {
             ServiceManager.CommandManager.RemoveHandler(commandName);
+            ServiceManager.CommandManager.RemoveHandler(commandNameDebug);
         }
 
         private void OnCommand(string command, string args)
@@ -72,6 +80,19 @@ namespace MiniMappingway
             if (command != null && command == "/mmway")
             {
                 ServiceManager.PluginUi.SettingsVisible = true;
+            }
+            if (command != null && command == commandNameDebug)
+            {
+                ServiceManager.NaviMapManager.debugMode = !ServiceManager.NaviMapManager.debugMode;
+                if (ServiceManager.NaviMapManager.debugMode)
+                {
+                    ServiceManager.WindowManager.naviMapWindow.Flags &= ~ImGuiWindowFlags.NoBackground;
+                }
+                else
+                {
+                    ServiceManager.WindowManager.naviMapWindow.Flags |= ImGuiWindowFlags.NoBackground;
+
+                }
             }
             // in response to the slash command, just display our main ui
 

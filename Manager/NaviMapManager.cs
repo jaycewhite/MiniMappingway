@@ -38,6 +38,8 @@ namespace MiniMappingway.Manager
 
         public string? debugValue;
 
+        public bool debugMode = false;
+
         public AtkUnitBase* naviMapPointer => (AtkUnitBase*) ServiceManager.GameGui.GetAddonByName("_NaviMap", 1);
 
         public ExcelSheet<Map>? Maps;

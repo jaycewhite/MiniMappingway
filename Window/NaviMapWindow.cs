@@ -13,6 +13,7 @@ namespace MiniMappingway.Window
 
         Vector2 mapSize = new Vector2();
         Vector2 mapPos = new Vector2();
+        Vector2 windowPos = new Vector2();
 
         float minimapRadius;
 
@@ -21,7 +22,8 @@ namespace MiniMappingway.Window
             Size = new Vector2(200, 200);
             Position = new Vector2(200, 200);
 
-            Flags |= ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground;
+            Flags |= ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground
+                | ImGuiWindowFlags.NoBringToFrontOnFocus | ImGuiWindowFlags.NoFocusOnAppearing |ImGuiWindowFlags.NoNavFocus;
 
             ForceMainWindow = true;
         }
@@ -29,13 +31,13 @@ namespace MiniMappingway.Window
         public unsafe override void Draw()
         {
             ImDrawListPtr draw_list = ImGui.GetWindowDrawList();
-            var windowLocation = ImGui.GetWindowPos();
             ServiceManager.NaviMapManager.CircleData.ForEach(circle =>
             {
                 draw_list.AddCircleFilled(circle.Position, ServiceManager.Configuration.circleSize, ServiceManager.NaviMapManager.Colours[(int)circle.Category]);
 
             });
-#if (DEBUG)
+            if (ServiceManager.NaviMapManager.debugMode)
+            {
                 ImGui.Text($"zoom {ServiceManager.NaviMapManager.zoom}");
                 ImGui.Text($"naviScale {ServiceManager.NaviMapManager.naviScale}");
                 ImGui.Text($"zoneScale {ServiceManager.NaviMapManager.zoneScale}");
@@ -43,8 +45,10 @@ namespace MiniMappingway.Window
                 ImGui.Text($"offsetY {ServiceManager.NaviMapManager.offsetY}");
                 ImGui.Text($"x {ServiceManager.NaviMapManager.X}");
                 ImGui.Text($"y {ServiceManager.NaviMapManager.Y}");
-                ImGui.Text($"debug {ServiceManager.NaviMapManager.debugValue}");
-#endif
+                ImGui.Text($"windowPos {windowPos}");
+            }
+
+
 
             ServiceManager.NaviMapManager.CircleData.Clear();
         }
@@ -108,9 +112,9 @@ namespace MiniMappingway.Window
         public void PrepareDrawOnMinimap(List<GameObject> list, CircleCategory circleCategory)
         {
             //Get ffxiv window position on screen, 60,60 if multi-monitor mode is off
-            var windowLocation = ImGui.GetWindowPos();
-            windowLocation.X -= 60f;
-            windowLocation.Y -= 60f;
+            windowPos = ImGui.GetWindowPos();
+            windowPos.X -= 60f;
+            windowPos.Y -= 60f;
 
             if (list.Count > 0)
             {
@@ -118,7 +122,7 @@ namespace MiniMappingway.Window
                 Vector2 playerPos = new Vector2(ServiceManager.FinderService.playerPos.X, ServiceManager.FinderService.playerPos.Y);
 
                 //Player Circle position will always be center of the minimap, this is also our pivot point
-                Vector2 playerCirclePos = new Vector2(ServiceManager.NaviMapManager.X + (mapSize.X / 2), ServiceManager.NaviMapManager.Y + (mapSize.Y / 2)) + windowLocation;
+                Vector2 playerCirclePos = new Vector2(ServiceManager.NaviMapManager.X + (mapSize.X / 2), ServiceManager.NaviMapManager.Y + (mapSize.Y / 2)) + windowPos;
 
                 //to line up with minimap pivot better
                 playerCirclePos.Y -= 5f; 
