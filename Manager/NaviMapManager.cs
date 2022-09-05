@@ -101,7 +101,7 @@ namespace MiniMappingway.Manager
                 X = _naviMapPtr->X;
                 Y = _naviMapPtr->Y;
                 naviScale = _naviMapPtr->Scale;
-                visible = _naviMapPtr->RootNode->IsVisible;
+                visible = ((_naviMapPtr->VisibilityFlags & 0x03) == 0);
             }
 
             return true;
