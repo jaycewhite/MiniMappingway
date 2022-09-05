@@ -21,7 +21,7 @@ namespace MiniMappingway.Window
         {
             Size = new Vector2(200, 200);
             Position = new Vector2(200, 200);
-
+            
             Flags |= ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground
                 | ImGuiWindowFlags.NoBringToFrontOnFocus | ImGuiWindowFlags.NoFocusOnAppearing |ImGuiWindowFlags.NoNavFocus;
 
@@ -111,10 +111,8 @@ namespace MiniMappingway.Window
 
         public void PrepareDrawOnMinimap(List<GameObject> list, CircleCategory circleCategory)
         {
-            //Get ffxiv window position on screen, 60,60 if multi-monitor mode is off
-            windowPos = ImGui.GetWindowPos();
-            windowPos.X -= 60f;
-            windowPos.Y -= 60f;
+            //Get ffxiv window position on screen
+            windowPos = ImGui.GetWindowViewport().Pos;
 
             if (list.Count > 0)
             {

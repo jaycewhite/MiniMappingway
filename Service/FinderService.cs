@@ -77,7 +77,7 @@ namespace MiniMappingway.Service
                     {
                         return;
                     }
-
+                    
                     //iscasting currently means friend
                     if (ServiceManager.Configuration.showFriends)
                     {
