@@ -35,6 +35,7 @@ namespace MiniMappingway
             ServiceManager.NaviMapManager = new();
             ServiceManager.PluginUi = new();
             ServiceManager.WindowManager = new();
+            ServiceManager.FcManager = new();
 
             #endregion
 
@@ -63,6 +64,8 @@ namespace MiniMappingway
             ServiceManager.DalamudPluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
 
             ServiceManager.ClientState.TerritoryChanged += (i, x) => { ServiceManager.NaviMapManager.updateMap(); };
+
+            ServiceManager.Framework.Update += (i) => { ServiceManager.FcManager.LoadFcMembers(); };
 
             #endregion
         }

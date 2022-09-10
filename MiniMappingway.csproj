@@ -27,6 +27,7 @@
 
   <ItemGroup>
     <PackageReference Include="DalamudPackager" Version="2.1.8" />
+    <PackageReference Include="NetStone" Version="1.0.0" />
     <Reference Include="FFXIVClientStructs">
       <HintPath>$(DalamudLibPath)FFXIVClientStructs.dll</HintPath>
       <Private>false</Private>

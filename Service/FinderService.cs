@@ -1,4 +1,5 @@
 ﻿using Dalamud.Game.ClientState.Objects.Enums;
+using Dalamud.Memory;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using MiniMappingway.Manager;
 using System;
@@ -95,24 +96,23 @@ namespace MiniMappingway.Service
 
                     if (ServiceManager.Configuration.showFcMembers)
                     {
-                        if (FC == null)
+                        if(!ServiceManager.FcManager.fcMembersLoaded || ServiceManager.FcManager.FcMemberNames.Count < 1)
                         {
                             return;
                         }
-                        var tempFc = new ReadOnlySpan<byte>(charPointer->FreeCompanyTag, 7);
-                        var playerFC = new ReadOnlySpan<byte>(FC, 7);
-                        ServiceManager.NaviMapManager.debugValue = (FC->CompareTo(0) == 0).ToString();
-                        if (FC->CompareTo(0) == 0)
+                        var charName = MemoryHelper.ReadStringNullTerminated((IntPtr)charPointer->GameObject.Name);
+
+                        foreach (var memberName in ServiceManager.FcManager.FcMemberNames)
                         {
-                            return;
-                        }
-                        if (playerFC.SequenceEqual(tempFc))
-                        {
-                            lock (fcMembers)
+                            if (charName == memberName)
                             {
-                                fcMembers.Add(obj);
+                                lock (fcMembers)
+                                {
+                                    fcMembers.Add(obj);
+                                }
                             }
                         }
+                        
                     }
                 }
             });

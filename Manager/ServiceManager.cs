@@ -22,6 +22,7 @@ namespace MiniMappingway
         [PluginService] public static SigScanner SigScanner { get; set; } = null!;
         [PluginService] public static DalamudPluginInterface DalamudPluginInterface { get; set; } = null!;
         [PluginService] public static CommandManager CommandManager { get; set; } = null!;
+        [PluginService] public static Framework Framework { get; set; } = null!;
         public static WindowSystem WindowSystem { get; set; } = new("MiniMappingway");
 
 
@@ -34,6 +35,7 @@ namespace MiniMappingway
         public static Configuration Configuration { get; set; } = null!;
         public static PluginUI PluginUi { get; set; } = null!;
         public static WindowManager WindowManager { get; set; } = null!;
+        public static FcManager FcManager { get; set; } = null!;
 
     }
 }
