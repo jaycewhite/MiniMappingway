@@ -40,6 +40,8 @@ namespace MiniMappingway.Manager
 
         public bool debugMode = false;
 
+        public bool isLocked = false;
+
         public AtkUnitBase* naviMapPointer => (AtkUnitBase*) ServiceManager.GameGui.GetAddonByName("_NaviMap", 1);
 
         public ExcelSheet<Map>? Maps;
@@ -80,7 +82,10 @@ namespace MiniMappingway.Manager
 
             unsafe
             {
-                var _naviMapPtr = (AtkUnitBase*)naviMapPointer;
+                var _naviMapPtr = naviMapPointer;
+
+                //There's probably a better way of doing this but I don't know it for now
+                isLocked = ((AtkComponentCheckBox*)_naviMapPtr->GetNodeById(4)->GetComponent())->IsChecked; 
 
                 var rotationPtr = (float*)((nint)_naviMapPtr + 0x254);
                 var naviScalePtr = (float*)((nint)_naviMapPtr + 0x24C);

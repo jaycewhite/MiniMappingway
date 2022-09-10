@@ -83,7 +83,7 @@ namespace MiniMappingway.Service
                     {
 
 
-                        if (((StatusFlags)charPointer->StatusFlags).HasFlag(StatusFlags.IsCasting))
+                        if (((StatusFlags)charPointer->StatusFlags).HasFlag(StatusFlags.OffhandOut))
                         {
                             lock (friends)
                             {

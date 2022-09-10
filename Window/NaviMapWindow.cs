@@ -46,6 +46,7 @@ namespace MiniMappingway.Window
                 ImGui.Text($"x {ServiceManager.NaviMapManager.X}");
                 ImGui.Text($"y {ServiceManager.NaviMapManager.Y}");
                 ImGui.Text($"windowPos {windowPos}");
+                ImGui.Text($"windowPos {ServiceManager.NaviMapManager.isLocked}");
             }
 
 
@@ -145,7 +146,7 @@ namespace MiniMappingway.Window
 
 
                     //if the minimap is unlocked, rotate circles around the player (the center of the minimap)
-                    if (!ServiceManager.Configuration.minimapLocked)
+                    if (!ServiceManager.NaviMapManager.isLocked)
                     {
                         personCirclePos = RotateForMiniMap(playerCirclePos, personCirclePos, (int)ServiceManager.NaviMapManager.rotation);
                     }

@@ -45,7 +45,7 @@ namespace MiniMappingway
                 return;
             }
 
-            ImGui.SetNextWindowSize(new Vector2(350, 290), ImGuiCond.Appearing);
+            ImGui.SetNextWindowSize(new Vector2(350, 310), ImGuiCond.Appearing);
             if (ImGui.Begin("Mini-Mappingway Settings", ref settingsVisible, ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
             {
                 // can't ref a property, so use a local copy
@@ -69,14 +69,13 @@ namespace MiniMappingway
                     ServiceManager.Configuration.showFcMembers = showFcMembers;
                     ServiceManager.Configuration.Save();
                 }
-
-                var minimapLocked = ServiceManager.Configuration.minimapLocked;
-                ImGui.Text("Set this if your minimap always faces north");
-                if (ImGui.Checkbox("Minimap Locked", ref minimapLocked))
+                if (ServiceManager.Configuration.showFcMembers)
                 {
-                    ServiceManager.Configuration.minimapLocked = minimapLocked;
-                    ServiceManager.Configuration.Save();
+                    ImGui.TextColored(new Vector4(255,0,0,255),"For now this is done by comparing FC tags.");
+                    ImGui.TextColored(new Vector4(255, 0, 0, 255), "If you have a common FC tag you may wish to disable this.");
+
                 }
+                ImGui.NewLine();
 
                 var friendColour = ServiceManager.Configuration.friendColour;
                 ImGui.Text("Friend Colour. Click the coloured square for a picker.");
