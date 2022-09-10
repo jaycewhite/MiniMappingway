@@ -5,12 +5,12 @@ namespace MiniMappingway.Model
     public class CircleData
     {
         public Vector2 Position;
-        public CircleCategory Category;
+        public string SourceName;
 
-        public CircleData(Vector2 position, CircleCategory category)
+        public CircleData(Vector2 position, string sourceName)
         {
-            this.Position = position;
-            this.Category = category;
+            Position = position;
+            SourceName = sourceName;
         }
     }
 }

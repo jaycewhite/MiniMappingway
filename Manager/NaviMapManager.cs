@@ -7,6 +7,7 @@ using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
 using MiniMappingway.Model;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Dalamud.Utility.Signatures;
 
@@ -14,6 +15,11 @@ namespace MiniMappingway.Manager
 {
     public unsafe class NaviMapManager
     {
+
+        public ConcurrentDictionary<string, SynchronizedCollection<IntPtr>> personListsDict = new ConcurrentDictionary<string, SynchronizedCollection<IntPtr>>();
+
+        public ConcurrentDictionary<string, SourceData> sourceDataDict = new ConcurrentDictionary<string, SourceData>();
+
         public int X;
 
         public int Y;
@@ -62,6 +68,13 @@ namespace MiniMappingway.Manager
             updateNaviMap();
             updateMap();
             updateColourArray();
+        }
+
+        public void AddOrUpdateSource(string sourceName, SourceData data)
+        {
+            sourceDataDict.AddOrUpdate(sourceName, data, (x, y) => data);
+
+            personListsDict.TryAdd(sourceName, new SynchronizedCollection<IntPtr>());
         }
 
         public void updateColourArray()
@@ -141,6 +154,45 @@ namespace MiniMappingway.Manager
         private unsafe uint getMapId()
         {
             return *MapSig1 == 0 ? *MapSig2 : *MapSig1;
+        }
+
+        public void ClearPersonBag(string sourceName)
+        {
+            if(personListsDict.TryGetValue(sourceName, out var personBag))
+            {
+                personBag.Clear();
+            }
+        }
+        public void UpdateWholeBag(string sourceName, List<IntPtr> list) 
+        {
+
+            if(personListsDict.TryGetValue(sourceName,out var personBag))
+            {
+                personBag.Clear();
+                foreach (var person in list)
+                {
+                    personBag.Add(person);
+                }
+            }
+            
+        }
+
+        public void AddToBag(string sourceName, IntPtr entry)
+        {
+            if(personListsDict.TryGetValue(sourceName,out var personList))
+            {
+                personList.Add(entry);
+            }
+
+        }
+
+        public void RemoveFromBag(string sourceName, IntPtr entry)
+        {
+            if (personListsDict.TryGetValue(sourceName, out var personList))
+            {
+                personList.Remove(entry);
+            }
+
         }
 
     }

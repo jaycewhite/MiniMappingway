@@ -1,8 +1,10 @@
-﻿using Dalamud.Game.ClientState.Objects.Types;
+﻿using FFXIVClientStructs.FFXIV.Client.Game.Character;
+using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using ImGuiNET;
 using MiniMappingway.Model;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 
 namespace MiniMappingway.Window
@@ -16,6 +18,8 @@ namespace MiniMappingway.Window
         Vector2 windowPos = new Vector2();
 
         float minimapRadius;
+
+        List<uint> colours = new List<uint>();
 
         public NaviMapWindow() : base("NaviMapWindow")
         {
@@ -33,8 +37,7 @@ namespace MiniMappingway.Window
             ImDrawListPtr draw_list = ImGui.GetWindowDrawList();
             ServiceManager.NaviMapManager.CircleData.ForEach(circle =>
             {
-                draw_list.AddCircleFilled(circle.Position, ServiceManager.Configuration.circleSize, ServiceManager.NaviMapManager.Colours[(int)circle.Category]);
-
+                draw_list.AddCircleFilled(circle.Position, ServiceManager.Configuration.circleSize, ServiceManager.NaviMapManager.sourceDataDict[circle.SourceName].Color);
             });
             if (ServiceManager.NaviMapManager.debugMode)
             {
@@ -71,14 +74,7 @@ namespace MiniMappingway.Window
         public override void PreDraw()
         {
 
-            if (ServiceManager.Configuration.showFcMembers)
-            {
-                PrepareDrawOnMinimap(ServiceManager.FinderService.fcMembers, CircleCategory.fc);
-            }
-            if (ServiceManager.Configuration.showFriends)
-            {
-                PrepareDrawOnMinimap(ServiceManager.FinderService.friends, CircleCategory.friend);
-            }
+            PrepareDrawOnMinimap();
 
         }
 
@@ -109,66 +105,99 @@ namespace MiniMappingway.Window
 
 
 
-        public void PrepareDrawOnMinimap(List<GameObject> list, CircleCategory circleCategory)
+        public void PrepareDrawOnMinimap()
         {
             //Get ffxiv window position on screen
             windowPos = ImGui.GetWindowViewport().Pos;
 
-            if (list.Count > 0)
+            foreach (var keyValuePair in ServiceManager.NaviMapManager.personListsDict)
             {
-                //Player position from GameObject
-                Vector2 playerPos = new Vector2(ServiceManager.FinderService.playerPos.X, ServiceManager.FinderService.playerPos.Y);
+
+                if (keyValuePair.Value.Count > 0)
+                {
+                    //Player position from GameObject
+                    Vector2 playerPos = new Vector2(ServiceManager.FinderService.playerPos.X, ServiceManager.FinderService.playerPos.Y);
 
                 //Player Circle position will always be center of the minimap, this is also our pivot point
                 Vector2 playerCirclePos = new Vector2(ServiceManager.NaviMapManager.X + (mapSize.X / 2), ServiceManager.NaviMapManager.Y + (mapSize.Y / 2)) + windowPos;
 
-                //to line up with minimap pivot better
-                playerCirclePos.Y -= 5f; 
-
-                foreach (var person in list)
-                {
-                    //Calculate the relative position in world coords
-                    Vector2 relativePersonPos = new Vector2(0,0);
-
-                    relativePersonPos.X = playerPos.X - person.Position.X;
-                    relativePersonPos.Y = playerPos.Y - person.Position.Z;
-
-                    //Account for various scales that can affect the minimap
-                    relativePersonPos *= ServiceManager.NaviMapManager.zoneScale;
-                    relativePersonPos *= ServiceManager.NaviMapManager.naviScale;
-                    relativePersonPos *= ServiceManager.NaviMapManager.zoom;
-
-
-                    //The Circle position for the "person" should be the players circle position minus the relativePosition of the person
-                    var personCirclePos = playerCirclePos - relativePersonPos;
-
-
-
-                    //if the minimap is unlocked, rotate circles around the player (the center of the minimap)
-                    if (!ServiceManager.Configuration.minimapLocked)
+                    //to line up with minimap pivot better
+                    playerCirclePos.Y -= 5f;
+                    var removeList = new List<IntPtr>();
+                    foreach (var item in keyValuePair.Value)
                     {
-                        personCirclePos = RotateForMiniMap(playerCirclePos, personCirclePos, (int)ServiceManager.NaviMapManager.rotation);
+                        unsafe
+                        {
+                            if(((GameObject*)item)->ObjectIndex == 0)
+                            {
+                                removeList.Add(item);
+                            }
+                            
+
+                        }
+                    };
+
+                    foreach(var item in removeList)
+                    {
+                        keyValuePair.Value.Remove(item);
                     }
 
-
-                    //If the circle would leave the minimap, clamp it to the minimap radius
-                    var distance = Vector2.Distance(playerCirclePos, personCirclePos);
-                    if (distance > minimapRadius)
+                    foreach (var person in keyValuePair.Value)
                     {
-                        var originToObject = personCirclePos - playerCirclePos;
-                        originToObject *= minimapRadius / distance;
-                        personCirclePos = playerCirclePos + originToObject;
+                        var personObj = ServiceManager.ObjectTable.CreateObjectReference(person);
+                        if (personObj == null || !personObj.IsValid())
+                        {
+                            continue;
+                        }
+
+                        //Calculate the relative position in world coords
+                        Vector2 relativePersonPos = new Vector2(0, 0);
+
+                        relativePersonPos.X = playerPos.X - personObj.Position.X;
+                        relativePersonPos.Y = playerPos.Y - personObj.Position.Z;
+
+                        //Account for various scales that can affect the minimap
+                        relativePersonPos *= ServiceManager.NaviMapManager.zoneScale;
+                        relativePersonPos *= ServiceManager.NaviMapManager.naviScale;
+                        relativePersonPos *= ServiceManager.NaviMapManager.zoom;
+
+
+                        //The Circle position for the "person" should be the players circle position minus the relativePosition of the person
+                        var personCirclePos = playerCirclePos - relativePersonPos;
+
+
+
+                        //if the minimap is unlocked, rotate circles around the player (the center of the minimap)
+                        if (!ServiceManager.Configuration.minimapLocked)
+                        {
+                            personCirclePos = RotateForMiniMap(playerCirclePos, personCirclePos, (int)ServiceManager.NaviMapManager.rotation);
+                        }
+
+
+                        //If the circle would leave the minimap, clamp it to the minimap radius
+                        var distance = Vector2.Distance(playerCirclePos, personCirclePos);
+                        if (distance > minimapRadius)
+                        {
+                            var originToObject = personCirclePos - playerCirclePos;
+                            originToObject *= minimapRadius / distance;
+                            personCirclePos = playerCirclePos + originToObject;
+                        }
+
+
+
+                        ServiceManager.NaviMapManager.CircleData.Add(new CircleData(personCirclePos, keyValuePair.Key));
+
                     }
 
-
-
-                    ServiceManager.NaviMapManager.CircleData.Add(new CircleData(personCirclePos, circleCategory));
-
+                    ////for debugging center point
+                    //ServiceManager.NaviMapManager.CircleData.Add(new CircleData(playerCirclePos, circleCategory));
                 }
-
-                ////for debugging center point
-                //ServiceManager.NaviMapManager.CircleData.Add(new CircleData(playerCirclePos, circleCategory));
             }
+
+            //Get ffxiv window position on screen, 60,60 if multi-monitor mode is off
+
+
+
         }
 
         public Vector2 RotateForMiniMap(Vector2 center, Vector2 pos, int angle)
