@@ -21,11 +21,12 @@ namespace MiniMappingway.Window
         {
             Size = new Vector2(200, 200);
             Position = new Vector2(200, 200);
-            
+
             Flags |= ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground
-                | ImGuiWindowFlags.NoBringToFrontOnFocus | ImGuiWindowFlags.NoFocusOnAppearing |ImGuiWindowFlags.NoNavFocus;
+                | ImGuiWindowFlags.NoBringToFrontOnFocus | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNavFocus;
 
             ForceMainWindow = true;
+            IsOpen = true;
         }
 
         public unsafe override void Draw()
@@ -54,24 +55,21 @@ namespace MiniMappingway.Window
             ServiceManager.NaviMapManager.CircleData.Clear();
         }
 
-        public override void PreOpenCheck()
+        public override bool DrawConditions()
         {
-
             if (!ServiceManager.Configuration.enabled
-                || !RunChecks()
                 || !ServiceManager.ClientState.IsLoggedIn
+                || !RunChecks()
                 || ServiceManager.NaviMapManager.loading
                 || !ServiceManager.NaviMapManager.visible)
             {
-                IsOpen = false;
-                return;
+                return false;
             }
-            IsOpen = true;
+            return true;
         }
 
         public override void PreDraw()
         {
-
             if (ServiceManager.Configuration.showFcMembers)
             {
                 PrepareDrawOnMinimap(ServiceManager.FinderService.fcMembers, CircleCategory.fc);
@@ -124,12 +122,12 @@ namespace MiniMappingway.Window
                 Vector2 playerCirclePos = new Vector2(ServiceManager.NaviMapManager.X + (mapSize.X / 2), ServiceManager.NaviMapManager.Y + (mapSize.Y / 2)) + windowPos;
 
                 //to line up with minimap pivot better
-                playerCirclePos.Y -= 5f; 
+                playerCirclePos.Y -= 5f;
 
                 foreach (var person in list)
                 {
                     //Calculate the relative position in world coords
-                    Vector2 relativePersonPos = new Vector2(0,0);
+                    Vector2 relativePersonPos = new Vector2(0, 0);
 
                     relativePersonPos.X = playerPos.X - person.Position.X;
                     relativePersonPos.Y = playerPos.Y - person.Position.Z;
