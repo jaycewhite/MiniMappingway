@@ -46,6 +46,8 @@ namespace MiniMappingway.Manager
 
         public bool debugMode = false;
 
+        public bool isLocked = false;
+
         public AtkUnitBase* naviMapPointer => (AtkUnitBase*) ServiceManager.GameGui.GetAddonByName("_NaviMap", 1);
 
         public ExcelSheet<Map>? Maps;
@@ -93,11 +95,13 @@ namespace MiniMappingway.Manager
 
             unsafe
             {
-                var _naviMapPtr = (AtkUnitBase*)naviMapPointer;
 
-                var rotationPtr = (float*)((nint)_naviMapPtr + 0x254);
-                var naviScalePtr = (float*)((nint)_naviMapPtr + 0x24C);
-                if (_naviMapPtr->UldManager.LoadedState != AtkLoadState.Loaded)
+                //There's probably a better way of doing this but I don't know it for now
+                isLocked = ((AtkComponentCheckBox*)naviMapPointer->GetNodeById(4)->GetComponent())->IsChecked; 
+
+                var rotationPtr = (float*)((nint)naviMapPointer + 0x254);
+                var naviScalePtr = (float*)((nint)naviMapPointer + 0x24C);
+                if (naviMapPointer->UldManager.LoadedState != AtkLoadState.Loaded)
                 {
                     return false;
                 }
@@ -111,12 +115,11 @@ namespace MiniMappingway.Manager
 
                 }
 
-                X = _naviMapPtr->X;
-                Y = _naviMapPtr->Y;
-                naviScale = _naviMapPtr->Scale;
-                visible = ((_naviMapPtr->VisibilityFlags & 0x03) == 0);
+                X = naviMapPointer->X;
+                Y = naviMapPointer->Y;
+                naviScale = naviMapPointer->Scale;
+                visible = ((naviMapPointer->VisibilityFlags & 0x03) == 0);
             }
-
             return true;
         }
 
@@ -136,7 +139,9 @@ namespace MiniMappingway.Manager
                 Dalamud.Logging.PluginLog.Verbose("Updating Map");
 
                 var map = Maps.GetRow(getMapId());
+
                 if (map == null) { return; }
+
                 if (map.SizeFactor != 0)
                 {
                     zoneScale = (float)map.SizeFactor / 100;

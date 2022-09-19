@@ -25,11 +25,12 @@ namespace MiniMappingway.Window
         {
             Size = new Vector2(200, 200);
             Position = new Vector2(200, 200);
-            
+
             Flags |= ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground
-                | ImGuiWindowFlags.NoBringToFrontOnFocus | ImGuiWindowFlags.NoFocusOnAppearing |ImGuiWindowFlags.NoNavFocus;
+                | ImGuiWindowFlags.NoBringToFrontOnFocus | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNavFocus;
 
             ForceMainWindow = true;
+            IsOpen = true;
         }
 
         public unsafe override void Draw()
@@ -49,6 +50,7 @@ namespace MiniMappingway.Window
                 ImGui.Text($"x {ServiceManager.NaviMapManager.X}");
                 ImGui.Text($"y {ServiceManager.NaviMapManager.Y}");
                 ImGui.Text($"windowPos {windowPos}");
+                ImGui.Text($"windowPos {ServiceManager.NaviMapManager.isLocked}");
             }
 
 
@@ -56,25 +58,29 @@ namespace MiniMappingway.Window
             ServiceManager.NaviMapManager.CircleData.Clear();
         }
 
-        public override void PreOpenCheck()
+        public override bool DrawConditions()
         {
-
             if (!ServiceManager.Configuration.enabled
-                || !RunChecks()
                 || !ServiceManager.ClientState.IsLoggedIn
+                || !RunChecks()
                 || ServiceManager.NaviMapManager.loading
                 || !ServiceManager.NaviMapManager.visible)
             {
-                IsOpen = false;
-                return;
+                return false;
             }
-            IsOpen = true;
+            return true;
         }
 
         public override void PreDraw()
         {
-
-            PrepareDrawOnMinimap();
+            if (ServiceManager.Configuration.showFcMembers)
+            {
+                PrepareDrawOnMinimap(ServiceManager.FinderService.fcMembers, CircleCategory.fc);
+            }
+            if (ServiceManager.Configuration.showFriends)
+            {
+                PrepareDrawOnMinimap(ServiceManager.FinderService.friends, CircleCategory.friend);
+            }
 
         }
 
@@ -167,11 +173,11 @@ namespace MiniMappingway.Window
 
 
 
-                        //if the minimap is unlocked, rotate circles around the player (the center of the minimap)
-                        if (!ServiceManager.Configuration.minimapLocked)
-                        {
-                            personCirclePos = RotateForMiniMap(playerCirclePos, personCirclePos, (int)ServiceManager.NaviMapManager.rotation);
-                        }
+                    //if the minimap is unlocked, rotate circles around the player (the center of the minimap)
+                    if (!ServiceManager.NaviMapManager.isLocked)
+                    {
+                        personCirclePos = RotateForMiniMap(playerCirclePos, personCirclePos, (int)ServiceManager.NaviMapManager.rotation);
+                    }
 
 
                         //If the circle would leave the minimap, clamp it to the minimap radius

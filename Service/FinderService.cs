@@ -73,7 +73,9 @@ namespace MiniMappingway.Service
 
             }
 
-            Parallel.For(1, ServiceManager.ObjectTable.Length, (i, state) =>
+            //Parallel.For(1, ServiceManager.ObjectTable.Length, (i, state) =>
+            var iterator = Enumerable.Range(2, 200).Where(x => x % 2 == 0);
+            Parallel.ForEach(iterator, i =>
             {
                 bool alreadyInFriendBag = false;
                 bool alreadyInFcbag = false;
