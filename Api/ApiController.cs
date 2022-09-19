@@ -13,7 +13,7 @@ namespace MiniMappingway.Api
     /// GetVersion (to see if plugin active/check compatibility),
     /// RegisterOrUpdateSourceVec/RegisterOrUpdateSourceUint to register as a source of markers,
     /// AddPerson/OverwriteList to add the people you wish to show, whether in bulk or one by one,
-    /// RemovePersonByName/RemovePersonByIntPtr as needed,
+    /// RemovePersonByName/RemovePersonByUint as needed,
     /// RemoveSourceAndPeople to remove your plugin as a source, and remove the list containing the people.
     /// 
     /// NB: people will be removed from the list automatically if they leave the ObjectTable.
@@ -33,11 +33,11 @@ namespace MiniMappingway.Api
 
         ICallGateProvider<string, List<PersonDetails>, bool> OverwriteListIPC = ServiceManager.DalamudPluginInterface.GetIpcProvider<string, List<PersonDetails>, bool>("MiniMappingway.OverwriteList");
 
-        ICallGateProvider<string, string, IntPtr, bool> AddPersonIPC = ServiceManager.DalamudPluginInterface.GetIpcProvider<string, string, IntPtr, bool>("MiniMappingway.AddPerson");
+        ICallGateProvider<string, string, uint, bool> AddPersonIPC = ServiceManager.DalamudPluginInterface.GetIpcProvider<string, string, uint, bool>("MiniMappingway.AddPerson");
 
         ICallGateProvider<string, string, bool> RemovePersonByNameIPC = ServiceManager.DalamudPluginInterface.GetIpcProvider<string, string, bool>("MiniMappingway.RemovePersonByName");
 
-        ICallGateProvider<string, IntPtr, bool> RemovePersonByIntPtrIPC = ServiceManager.DalamudPluginInterface.GetIpcProvider<string, IntPtr, bool>("MiniMappingway.RemovePersonByIntPtr");
+        ICallGateProvider<string, uint, bool> RemovePersonByIdIPC = ServiceManager.DalamudPluginInterface.GetIpcProvider<string, uint, bool>("MiniMappingway.RemovePersonByUint");
 
         ICallGateProvider<string, bool> RemoveSourceAndPeopleIPC = ServiceManager.DalamudPluginInterface.GetIpcProvider<string, bool>("MiniMappingway.RemoveSourceAndPeople");
 
@@ -49,7 +49,7 @@ namespace MiniMappingway.Api
             OverwriteListIPC.RegisterFunc(OverwriteList);
             AddPersonIPC.RegisterFunc(AddPerson);
             RemovePersonByNameIPC.RegisterFunc(RemovePerson);
-            RemovePersonByIntPtrIPC.RegisterFunc(RemovePerson);
+            RemovePersonByIdIPC.RegisterFunc(RemovePerson);
             RemoveSourceAndPeopleIPC.RegisterFunc(RemoveSourceAndPeople);
         }
 
@@ -100,11 +100,11 @@ namespace MiniMappingway.Api
         /// </summary>
         /// <param name="sourceName">Source name</param>
         /// <param name="name">Name of person as seen in ObjectTable</param>
-        /// <param name="ptr">IntPtr to person in ObjectTable</param>
+        /// <param name="id">Id of person in ObjectTable</param>
         /// <returns>Success boolean</returns>
-        private bool AddPerson(string sourceName, string name, IntPtr ptr)
+        private bool AddPerson(string sourceName, string name, uint id)
         {
-            return ServiceManager.NaviMapManager.AddToBag(sourceName, new PersonDetails(name, ptr));
+            return ServiceManager.NaviMapManager.AddToBag(sourceName, new PersonDetails(name, id));
         }
 
         /// <summary>
@@ -119,14 +119,14 @@ namespace MiniMappingway.Api
         }
 
         /// <summary>
-        /// Remove person from list for source by IntPtr
+        /// Remove person from list for source by uint
         /// </summary>
         /// <param name="sourceName">Source name</param>
-        /// <param name="Ptr">IntPtr to person in ObjectTable</param>
+        /// <param name="Id">Id of person in ObjectTable</param>
         /// <returns>Success boolean</returns>
-        private bool RemovePerson(string sourceName, IntPtr Ptr)
+        private bool RemovePerson(string sourceName, uint id)
         {
-            return ServiceManager.NaviMapManager.RemoveFromBag(sourceName, Ptr);
+            return ServiceManager.NaviMapManager.RemoveFromBag(sourceName, id);
         }
 
         /// <summary>
@@ -147,7 +147,7 @@ namespace MiniMappingway.Api
             OverwriteListIPC.UnregisterFunc();
             AddPersonIPC.UnregisterFunc();
             RemovePersonByNameIPC.UnregisterFunc();
-            RemovePersonByIntPtrIPC.UnregisterFunc();
+            RemovePersonByIdIPC.UnregisterFunc();
             RemoveSourceAndPeopleIPC.UnregisterFunc();
         }
     }

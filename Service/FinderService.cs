@@ -11,9 +11,6 @@ namespace MiniMappingway.Service
 {
     public sealed class FinderService : IDisposable
     {
-        //public List<Types.GameObject> friends = new List<Types.GameObject>();
-        //public List<Types.GameObject> fcMembers = new List<Types.GameObject>();
-
         const string FCMembersKey = "fcmembers";
         const string friendKey = "friends";
 
@@ -49,7 +46,7 @@ namespace MiniMappingway.Service
                 {
                     foreach (var person in personList.Value)
                     {
-                        var existsAndCorrectPerson = ServiceManager.ObjectTable.Any(x => x.Address == person.Value && x.Name.ToString() == person.Key);
+                        var existsAndCorrectPerson = ServiceManager.ObjectTable.Any(x => x.ObjectId == person.Value && x.Name.ToString() == person.Key);
                         if (!existsAndCorrectPerson)
                         {
                             ServiceManager.NaviMapManager.RemoveFromBag(personList.Key, person.Value);
@@ -111,7 +108,7 @@ namespace MiniMappingway.Service
                 {
                     if(ServiceManager.NaviMapManager.personListsDict.TryGetValue(friendKey,out var friendBag))
                     {
-                        if (friendBag.Any(x => x.Value == obj.Address))
+                        if (friendBag.Any(x => x.Value == obj.ObjectId))
                         {
                             alreadyInFriendBag = true;
                         }
@@ -119,7 +116,7 @@ namespace MiniMappingway.Service
 
                     if (ServiceManager.NaviMapManager.personListsDict.TryGetValue(FCMembersKey, out var fCBag))
                     {
-                        if (fCBag.Any(x => x.Value == obj.Address))
+                        if (fCBag.Any(x => x.Value == obj.ObjectId))
                         {
                             alreadyInFcbag = true;
                         }
@@ -146,7 +143,7 @@ namespace MiniMappingway.Service
                     {
                         if (((StatusFlags)charPointer->StatusFlags).HasFlag(StatusFlags.OffhandOut))
                         {
-                            var personDetails = new PersonDetails(obj.Name.ToString(), obj.Address);
+                            var personDetails = new PersonDetails(obj.Name.ToString(), obj.ObjectId);
 
                             ServiceManager.NaviMapManager.AddToBag("friends", personDetails);
 
@@ -167,7 +164,7 @@ namespace MiniMappingway.Service
                         }
                         if (playerFC.SequenceEqual(tempFc))
                         {
-                            var personDetails = new PersonDetails(obj.Name.ToString(), obj.Address);
+                            var personDetails = new PersonDetails(obj.Name.ToString(), obj.ObjectId);
 
                             ServiceManager.NaviMapManager.AddToBag("fc", personDetails);
                         }

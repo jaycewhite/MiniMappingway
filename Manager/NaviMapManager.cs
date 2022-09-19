@@ -18,7 +18,7 @@ namespace MiniMappingway.Manager
     public unsafe class NaviMapManager : IDisposable
     {
 
-        public ConcurrentDictionary<string, ConcurrentDictionary<string, IntPtr>> personListsDict = new ConcurrentDictionary<string, ConcurrentDictionary<string,IntPtr>>();
+        public ConcurrentDictionary<string, ConcurrentDictionary<string, uint>> personListsDict = new ConcurrentDictionary<string, ConcurrentDictionary<string,uint>>();
 
         public ConcurrentDictionary<string, uint> sourceDataDict = new ConcurrentDictionary<string, uint>();
 
@@ -77,7 +77,7 @@ namespace MiniMappingway.Manager
         {
             sourceDataDict.AddOrUpdate(sourceName, colour,(x,y) => colour);
 
-            personListsDict.TryAdd(sourceName, new ConcurrentDictionary<string,IntPtr>());
+            personListsDict.TryAdd(sourceName, new ConcurrentDictionary<string,uint>());
             return true;
         }
 
@@ -86,7 +86,7 @@ namespace MiniMappingway.Manager
             var uintColor = ImGui.ColorConvertFloat4ToU32(colour);
             sourceDataDict.AddOrUpdate(sourceName, uintColor, (x, y) => uintColor);
 
-            personListsDict.TryAdd(sourceName, new ConcurrentDictionary<string, IntPtr>());
+            personListsDict.TryAdd(sourceName, new ConcurrentDictionary<string, uint>());
 
             return true;
         }
@@ -190,7 +190,7 @@ namespace MiniMappingway.Manager
                 personBag.Clear();
                 foreach (var person in list)
                 {
-                    if(!personBag.TryAdd(person.Name, person.Ptr))
+                    if(!personBag.TryAdd(person.Name, person.Id))
                     {
                         success = false;
                     }
@@ -204,16 +204,16 @@ namespace MiniMappingway.Manager
         {
             if(personListsDict.TryGetValue(sourceName,out var personList))
             {
-                return personList.TryAdd(details.Name, details.Ptr);
+                return personList.TryAdd(details.Name, details.Id);
             }
             return false;
         }
 
-        public bool RemoveFromBag(string sourceName, IntPtr ptr)
+        public bool RemoveFromBag(string sourceName, uint id)
         {
             if (personListsDict.TryGetValue(sourceName, out var personList))
             {
-                var entry = personList.First(x => x.Value == ptr);
+                var entry = personList.First(x => x.Value == id);
                 return personList.TryRemove(entry);
             }
             return false;

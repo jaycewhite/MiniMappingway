@@ -8,12 +8,6 @@ namespace MiniMappingway.Manager
 
         internal readonly NaviMapWindow naviMapWindow = new NaviMapWindow();
 
-
-        public WindowManager()
-        {
-            
-        }
-
         public void AddWindowsToWindowSystem()
         {
             Dalamud.Logging.PluginLog.Verbose("Adding Windows To Window System");

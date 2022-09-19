@@ -140,7 +140,7 @@ namespace MiniMappingway.Window
 
                     foreach (var person in keyValuePair.Value.Values)
                     {
-                        var personObj = ServiceManager.ObjectTable.CreateObjectReference(person);
+                        var personObj = ServiceManager.ObjectTable.SearchById(person);
                         if (personObj == null || !personObj.IsValid())
                         {
                             continue;

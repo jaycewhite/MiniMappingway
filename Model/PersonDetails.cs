@@ -4,13 +4,13 @@ namespace MiniMappingway.Model
 {
     public class PersonDetails
     {
-        public IntPtr Ptr { get; }
+        public uint Id { get; }
 
         public string Name { get; }
 
-        public PersonDetails(string name, IntPtr ptr)
+        public PersonDetails(string name, uint id)
         {
-            Ptr = ptr;
+            Id = id;
             Name = name;
         }
     }
