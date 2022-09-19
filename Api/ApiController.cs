@@ -15,6 +15,10 @@ namespace MiniMappingway.Api
     /// AddPerson/OverwriteList to add the people you wish to show, whether in bulk or one by one,
     /// RemovePersonByName/RemovePersonByIntPtr as needed,
     /// RemoveSourceAndPeople to remove your plugin as a source, and remove the list containing the people.
+    /// 
+    /// NB: people will be removed from the list automatically if they leave the ObjectTable.
+    /// Trying to remove a person that isn't in the list is safe, and will return false.
+    /// Trying to add a person that is already in the list is safe, and will return false.
     /// </summary>
     public class ApiController : IDisposable
     {
