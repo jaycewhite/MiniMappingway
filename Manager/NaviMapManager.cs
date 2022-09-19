@@ -15,7 +15,7 @@ using System.Numerics;
 
 namespace MiniMappingway.Manager
 {
-    public unsafe class NaviMapManager
+    public unsafe class NaviMapManager : IDisposable
     {
 
         public ConcurrentDictionary<string, ConcurrentDictionary<string, IntPtr>> personListsDict = new ConcurrentDictionary<string, ConcurrentDictionary<string,IntPtr>>();
@@ -238,5 +238,10 @@ namespace MiniMappingway.Manager
             return successPerson && successSource;
         }
 
+        public void Dispose()
+        {
+            personListsDict.Clear();
+            sourceDataDict.Clear();
+        }
     }
 }
