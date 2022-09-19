@@ -1,9 +1,4 @@
-﻿using Dalamud.Data;
-using Dalamud.Game;
-using Dalamud.Game.ClientState;
-using Dalamud.Game.ClientState.Objects;
-using Dalamud.Game.Command;
-using Dalamud.Game.Gui;
+﻿using Dalamud.Game.Command;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.IoC;
@@ -35,6 +30,7 @@ namespace MiniMappingway
             ServiceManager.NaviMapManager = new();
             ServiceManager.PluginUi = new();
             ServiceManager.WindowManager = new();
+            ServiceManager.ApiController = new();
 
             #endregion
 

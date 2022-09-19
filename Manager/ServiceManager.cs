@@ -7,6 +7,7 @@ using Dalamud.Game.Gui;
 using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
 using Dalamud.Plugin;
+using MiniMappingway.Api;
 using MiniMappingway.Manager;
 using MiniMappingway.Service;
 
@@ -35,6 +36,9 @@ namespace MiniMappingway
         public static Configuration Configuration { get; set; } = null!;
         public static PluginUI PluginUi { get; set; } = null!;
         public static WindowManager WindowManager { get; set; } = null!;
+
+        //Api Controller 
+        public static ApiController ApiController { get; set; } = null!;
 
     }
 }

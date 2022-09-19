@@ -10,15 +10,17 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Dalamud.Utility.Signatures;
+using System.Linq;
+using System.Numerics;
 
 namespace MiniMappingway.Manager
 {
     public unsafe class NaviMapManager
     {
 
-        public ConcurrentDictionary<string, SynchronizedCollection<IntPtr>> personListsDict = new ConcurrentDictionary<string, SynchronizedCollection<IntPtr>>();
+        public ConcurrentDictionary<string, ConcurrentDictionary<string, IntPtr>> personListsDict = new ConcurrentDictionary<string, ConcurrentDictionary<string,IntPtr>>();
 
-        public ConcurrentDictionary<string, SourceData> sourceDataDict = new ConcurrentDictionary<string, SourceData>();
+        public ConcurrentDictionary<string, uint> sourceDataDict = new ConcurrentDictionary<string, uint>();
 
         public int X;
 
@@ -37,7 +39,6 @@ namespace MiniMappingway.Manager
         public float zoom;
 
         public short offsetX;
-
         public short offsetY;
 
         public bool loading;
@@ -72,11 +73,22 @@ namespace MiniMappingway.Manager
             updateColourArray();
         }
 
-        public void AddOrUpdateSource(string sourceName, SourceData data)
+        public bool AddOrUpdateSource(string sourceName, uint colour)
         {
-            sourceDataDict.AddOrUpdate(sourceName, data, (x, y) => data);
+            sourceDataDict.AddOrUpdate(sourceName, colour,(x,y) => colour);
 
-            personListsDict.TryAdd(sourceName, new SynchronizedCollection<IntPtr>());
+            personListsDict.TryAdd(sourceName, new ConcurrentDictionary<string,IntPtr>());
+            return true;
+        }
+
+        public bool AddOrUpdateSource(string sourceName, Vector4 colour)
+        {
+            var uintColor = ImGui.ColorConvertFloat4ToU32(colour);
+            sourceDataDict.AddOrUpdate(sourceName, uintColor, (x, y) => uintColor);
+
+            personListsDict.TryAdd(sourceName, new ConcurrentDictionary<string, IntPtr>());
+
+            return true;
         }
 
         public void updateColourArray()
@@ -161,43 +173,69 @@ namespace MiniMappingway.Manager
             return *MapSig1 == 0 ? *MapSig2 : *MapSig1;
         }
 
-        public void ClearPersonBag(string sourceName)
+        public bool ClearPersonBag(string sourceName)
         {
             if(personListsDict.TryGetValue(sourceName, out var personBag))
             {
                 personBag.Clear();
+                return true;
             }
+            return false;
         }
-        public void UpdateWholeBag(string sourceName, List<IntPtr> list) 
+        public bool OverwriteWholeBag(string sourceName, List<PersonDetails> list) 
         {
-
             if(personListsDict.TryGetValue(sourceName,out var personBag))
             {
+                var success = true;
                 personBag.Clear();
                 foreach (var person in list)
                 {
-                    personBag.Add(person);
+                    if(!personBag.TryAdd(person.Name, person.Ptr))
+                    {
+                        success = false;
+                    }
                 }
+                return success;
             }
-            
+            return false;
         }
 
-        public void AddToBag(string sourceName, IntPtr entry)
+        public bool AddToBag(string sourceName, PersonDetails details)
         {
             if(personListsDict.TryGetValue(sourceName,out var personList))
             {
-                personList.Add(entry);
+                return personList.TryAdd(details.Name, details.Ptr);
             }
-
+            return false;
         }
 
-        public void RemoveFromBag(string sourceName, IntPtr entry)
+        public bool RemoveFromBag(string sourceName, IntPtr ptr)
         {
             if (personListsDict.TryGetValue(sourceName, out var personList))
             {
-                personList.Remove(entry);
+                var entry = personList.First(x => x.Value == ptr);
+                return personList.TryRemove(entry);
             }
+            return false;
 
+        }
+
+        public bool RemoveFromBag(string sourceName, string Name)
+        {
+            if (personListsDict.TryGetValue(sourceName, out var personList))
+            {
+                var entry = personList.First(x => x.Key == Name);
+                return personList.TryRemove(entry);
+            }
+            return false;
+        }
+
+        public bool RemoveSourceAndPeople(string sourceName)
+        {
+            var successPerson = personListsDict.TryRemove(sourceName, out _);
+            var successSource = sourceDataDict.TryRemove(sourceName, out _);
+
+            return successPerson && successSource;
         }
 
     }

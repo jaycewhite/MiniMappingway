@@ -16,8 +16,11 @@ namespace MiniMappingway.Window
         Vector2 mapSize = new Vector2();
         Vector2 mapPos = new Vector2();
         Vector2 windowPos = new Vector2();
+        Vector2 playerPos = new Vector2(0, 0);
 
         float minimapRadius;
+
+        public bool checksPassed = false;
 
         List<uint> colours = new List<uint>();
 
@@ -35,10 +38,14 @@ namespace MiniMappingway.Window
 
         public unsafe override void Draw()
         {
+            if (ServiceManager.NaviMapManager.CircleData.Count < 1)
+            {
+                return;
+            }
             ImDrawListPtr draw_list = ImGui.GetWindowDrawList();
             ServiceManager.NaviMapManager.CircleData.ForEach(circle =>
             {
-                draw_list.AddCircleFilled(circle.Position, ServiceManager.Configuration.circleSize, ServiceManager.NaviMapManager.sourceDataDict[circle.SourceName].Color);
+                draw_list.AddCircleFilled(circle.Position, ServiceManager.Configuration.circleSize, ServiceManager.NaviMapManager.sourceDataDict[circle.SourceName]);
             });
             if (ServiceManager.NaviMapManager.debugMode)
             {
@@ -73,14 +80,7 @@ namespace MiniMappingway.Window
 
         public override void PreDraw()
         {
-            if (ServiceManager.Configuration.showFcMembers)
-            {
-                PrepareDrawOnMinimap(ServiceManager.FinderService.fcMembers, CircleCategory.fc);
-            }
-            if (ServiceManager.Configuration.showFriends)
-            {
-                PrepareDrawOnMinimap(ServiceManager.FinderService.friends, CircleCategory.friend);
-            }
+            PrepareDrawOnMinimap();
 
         }
 
@@ -88,17 +88,28 @@ namespace MiniMappingway.Window
         {
             if (!ServiceManager.NaviMapManager.updateNaviMap())
             {
+                checksPassed = false;
                 return false;
             }
             ServiceManager.NaviMapManager.CheckIfLoading();
 
-
-            ServiceManager.FinderService.LookFor();
             mapSize = new Vector2(_naviMapSize * ServiceManager.NaviMapManager.naviScale, _naviMapSize * ServiceManager.NaviMapManager.naviScale);
             minimapRadius = mapSize.X * 0.315f;
             mapPos = new Vector2(ServiceManager.NaviMapManager.X, ServiceManager.NaviMapManager.Y);
             Size = mapSize;
             Position = mapPos;
+
+            unsafe
+            {
+                var player = (Character*)ServiceManager.ObjectTable[0]?.Address;
+                if (player == null)
+                {
+                    return false;
+                }
+
+                playerPos = new Vector2(player->GameObject.Position.X, player->GameObject.Position.Z);
+            }
+            checksPassed = true;
             return true;
         }
 
@@ -121,34 +132,13 @@ namespace MiniMappingway.Window
 
                 if (keyValuePair.Value.Count > 0)
                 {
-                    //Player position from GameObject
-                    Vector2 playerPos = new Vector2(ServiceManager.FinderService.playerPos.X, ServiceManager.FinderService.playerPos.Y);
-
-                //Player Circle position will always be center of the minimap, this is also our pivot point
-                Vector2 playerCirclePos = new Vector2(ServiceManager.NaviMapManager.X + (mapSize.X / 2), ServiceManager.NaviMapManager.Y + (mapSize.Y / 2)) + windowPos;
+                    //Player Circle position will always be center of the minimap, this is also our pivot point
+                    Vector2 playerCirclePos = new Vector2(ServiceManager.NaviMapManager.X + (mapSize.X / 2), ServiceManager.NaviMapManager.Y + (mapSize.Y / 2)) + windowPos;
 
                     //to line up with minimap pivot better
                     playerCirclePos.Y -= 5f;
-                    var removeList = new List<IntPtr>();
-                    foreach (var item in keyValuePair.Value)
-                    {
-                        unsafe
-                        {
-                            if(((GameObject*)item)->ObjectIndex == 0)
-                            {
-                                removeList.Add(item);
-                            }
-                            
 
-                        }
-                    };
-
-                    foreach(var item in removeList)
-                    {
-                        keyValuePair.Value.Remove(item);
-                    }
-
-                    foreach (var person in keyValuePair.Value)
+                    foreach (var person in keyValuePair.Value.Values)
                     {
                         var personObj = ServiceManager.ObjectTable.CreateObjectReference(person);
                         if (personObj == null || !personObj.IsValid())
@@ -173,11 +163,11 @@ namespace MiniMappingway.Window
 
 
 
-                    //if the minimap is unlocked, rotate circles around the player (the center of the minimap)
-                    if (!ServiceManager.NaviMapManager.isLocked)
-                    {
-                        personCirclePos = RotateForMiniMap(playerCirclePos, personCirclePos, (int)ServiceManager.NaviMapManager.rotation);
-                    }
+                        //if the minimap is unlocked, rotate circles around the player (the center of the minimap)
+                        if (!ServiceManager.NaviMapManager.isLocked)
+                        {
+                            personCirclePos = RotateForMiniMap(playerCirclePos, personCirclePos, (int)ServiceManager.NaviMapManager.rotation);
+                        }
 
 
                         //If the circle would leave the minimap, clamp it to the minimap radius
@@ -189,11 +179,11 @@ namespace MiniMappingway.Window
                             personCirclePos = playerCirclePos + originToObject;
                         }
 
-
-
                         ServiceManager.NaviMapManager.CircleData.Add(new CircleData(personCirclePos, keyValuePair.Key));
 
                     }
+
+
 
                     ////for debugging center point
                     //ServiceManager.NaviMapManager.CircleData.Add(new CircleData(playerCirclePos, circleCategory));

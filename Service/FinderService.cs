@@ -1,15 +1,11 @@
 ﻿using Dalamud.Game.ClientState.Objects.Enums;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using ImGuiNET;
-using MiniMappingway.Manager;
 using MiniMappingway.Model;
 using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
+using System.Threading;
 using System.Threading.Tasks;
-using Types = Dalamud.Game.ClientState.Objects.Types;
 
 namespace MiniMappingway.Service
 {
@@ -21,13 +17,47 @@ namespace MiniMappingway.Service
         const string FCMembersKey = "fcmembers";
         const string friendKey = "friends";
 
-        public Vector2 playerPos = new Vector2();
         public bool inCombat = false;
+
+        private readonly CancellationTokenSource cancellationToken = new();
 
         public FinderService()
         {
-            ServiceManager.NaviMapManager.AddOrUpdateSource(FCMembersKey, new SourceData(ImGui.ColorConvertFloat4ToU32(ServiceManager.Configuration.fcColour)));
-            ServiceManager.NaviMapManager.AddOrUpdateSource(friendKey, new SourceData(ImGui.ColorConvertFloat4ToU32(ServiceManager.Configuration.friendColour)));
+            ServiceManager.NaviMapManager.AddOrUpdateSource(FCMembersKey, ServiceManager.Configuration.fcColour);
+            ServiceManager.NaviMapManager.AddOrUpdateSource(friendKey, ServiceManager.Configuration.friendColour);
+            CheckNewPeople();
+            CheckStillInObjectTable();
+        }
+
+        private void CheckNewPeople()
+        {
+            ServiceManager.Framework.RunOnTick(CheckNewPeople, TimeSpan.FromSeconds(0.5), cancellationToken: cancellationToken.Token);
+
+            if (ServiceManager.WindowManager.naviMapWindow.checksPassed)
+            {
+                Task.Run(() => { LookFor(); });
+            }
+        }
+
+        private void CheckStillInObjectTable()
+        {
+            ServiceManager.Framework.RunOnTick(CheckStillInObjectTable, TimeSpan.FromSeconds(0.5), cancellationToken: cancellationToken.Token);
+
+            Task.Run(() =>
+            {
+                foreach (var personList in ServiceManager.NaviMapManager.personListsDict)
+                {
+                    foreach (var person in personList.Value)
+                    {
+                        var existsAndCorrectPerson = ServiceManager.ObjectTable.Any(x => x.Address == person.Value && x.Name.ToString() == person.Key);
+                        if (!existsAndCorrectPerson)
+                        {
+                            ServiceManager.NaviMapManager.RemoveFromBag(personList.Key, person.Value);
+                        }
+                    }
+                }
+            });
+
         }
 
         public unsafe void LookFor()
@@ -44,7 +74,6 @@ namespace MiniMappingway.Service
             }
             try
             {
-
                 unsafe
                 {
                     if(ServiceManager.ObjectTable[0] is null) {
@@ -56,8 +85,6 @@ namespace MiniMappingway.Service
                         return;
                     }
 
-                    playerPos = new Vector2(player->GameObject.Position.X, player->GameObject.Position.Z);
-
                     if (((StatusFlags)player->StatusFlags).HasFlag(StatusFlags.InCombat))
                     {
                         return;
@@ -65,8 +92,6 @@ namespace MiniMappingway.Service
                     FC = player->FreeCompanyTag;
 
                 }
-
-
             }
             catch
             {
@@ -86,7 +111,7 @@ namespace MiniMappingway.Service
                 {
                     if(ServiceManager.NaviMapManager.personListsDict.TryGetValue(friendKey,out var friendBag))
                     {
-                        if (friendBag.Contains(obj.Address))
+                        if (friendBag.Any(x => x.Value == obj.Address))
                         {
                             alreadyInFriendBag = true;
                         }
@@ -94,7 +119,7 @@ namespace MiniMappingway.Service
 
                     if (ServiceManager.NaviMapManager.personListsDict.TryGetValue(FCMembersKey, out var fCBag))
                     {
-                        if (fCBag.Contains(obj.Address))
+                        if (fCBag.Any(x => x.Value == obj.Address))
                         {
                             alreadyInFcbag = true;
                         }
@@ -119,11 +144,11 @@ namespace MiniMappingway.Service
                     //iscasting currently means friend
                     if (ServiceManager.Configuration.showFriends && !alreadyInFriendBag)
                     {
-
-
-                        if (((StatusFlags)charPointer->StatusFlags).HasFlag(StatusFlags.IsCasting))
+                        if (((StatusFlags)charPointer->StatusFlags).HasFlag(StatusFlags.OffhandOut))
                         {
-                            ServiceManager.NaviMapManager.AddToBag("friends", obj.Address);
+                            var personDetails = new PersonDetails(obj.Name.ToString(), obj.Address);
+
+                            ServiceManager.NaviMapManager.AddToBag("friends", personDetails);
 
                         }
                     }
@@ -142,7 +167,9 @@ namespace MiniMappingway.Service
                         }
                         if (playerFC.SequenceEqual(tempFc))
                         {
-                            ServiceManager.NaviMapManager.AddToBag("fc", obj.Address);
+                            var personDetails = new PersonDetails(obj.Name.ToString(), obj.Address);
+
+                            ServiceManager.NaviMapManager.AddToBag("fc", personDetails);
                         }
                     }
                 }
@@ -156,7 +183,7 @@ namespace MiniMappingway.Service
 
         public void Dispose()
         {
-            throw new NotImplementedException();
+            cancellationToken.Cancel();
         }
 
     }
