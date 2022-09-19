@@ -141,7 +141,7 @@ namespace MiniMappingway.Service
                     //iscasting currently means friend
                     if (ServiceManager.Configuration.showFriends && !alreadyInFriendBag)
                     {
-                        if (((StatusFlags)charPointer->StatusFlags).HasFlag(StatusFlags.OffhandOut))
+                        if (((StatusFlags)charPointer->StatusFlags).HasFlag(StatusFlags.IsCasting))
                         {
                             var personDetails = new PersonDetails(obj.Name.ToString(), obj.ObjectId);
 
