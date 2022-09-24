@@ -1,7 +1,7 @@
-﻿using Dalamud.Configuration;
-using Dalamud.Plugin;
-using System;
+﻿using System;
 using System.Numerics;
+using Dalamud.Configuration;
+using MiniMappingway.Manager;
 
 namespace MiniMappingway
 {
@@ -10,31 +10,24 @@ namespace MiniMappingway
     {
         public int Version { get; set; } = 0;
 
-        public bool showFcMembers { get; set; } = false;
-        public bool showFriends { get; set; } = true;
+        public bool ShowFcMembers { get; set; }
+        public bool ShowFriends { get; set; } = true;
 
-        public bool enabled { get; set; } = true;
+        public bool Enabled { get; set; } = true;
 
-        public Vector4 friendColour = new Vector4(0, 0, 255, 255);
-        public Vector4 fcColour = new Vector4(255, 0, 0, 255);
-        public int circleSize = 4;
+        public Vector4 FriendColour = new(0, 0, 255, 255);
+        public Vector4 FcColour = new(255, 0, 0, 255);
+        public int CircleSize = 4;
+        
 
-
-
-
-        // the below exist just to make saving less cumbersome
-
-        [NonSerialized]
-        private DalamudPluginInterface? pluginInterface;
-
-        public void Initialize(DalamudPluginInterface pluginInterface)
+        public void Initialize()
         {
-            this.pluginInterface = pluginInterface;
+
         }
 
         public void Save()
         {
-            pluginInterface!.SavePluginConfig(this);
+            ServiceManager.DalamudPluginInterface.SavePluginConfig(this);
         }
     }
 }

@@ -2,7 +2,7 @@
 {
     public enum CircleCategory
     {
-        friend = 0,
-        fc = 1
+        Friend = 0,
+        Fc = 1
     }
 }

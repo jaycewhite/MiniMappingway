@@ -1,55 +1,55 @@
-﻿using Dalamud.Data;
-using Dalamud.Game;
-using Dalamud.Game.Gui;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using System.Numerics;
+using Dalamud.Logging;
+using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
 using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
 using MiniMappingway.Model;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using Dalamud.Utility.Signatures;
-using System.Linq;
-using System.Numerics;
+using MiniMappingway.Utility;
 
 namespace MiniMappingway.Manager
 {
     public unsafe class NaviMapManager : IDisposable
     {
 
-        public ConcurrentDictionary<string, ConcurrentDictionary<string, uint>> personListsDict = new ConcurrentDictionary<string, ConcurrentDictionary<string,uint>>();
+        public ConcurrentDictionary<int, PersonDetails> PersonDict = new();
 
-        public ConcurrentDictionary<string, uint> sourceDataDict = new ConcurrentDictionary<string, uint>();
+        public ConcurrentDictionary<string, uint> SourceDataDict = new();
 
         public int X;
 
         public int Y;
 
-        public int yOffset = +1;
+        public int YOffset = +1;
 
-        public float naviScale;
+        public float NaviScale;
 
-        public float zoneScale;
+        public float ZoneScale;
 
-        public float rotation;
+        public float Rotation;
 
-        public bool visible;
+        public bool Visible;
 
-        public float zoom;
+        public float Zoom;
 
-        public short offsetX;
-        public short offsetY;
+        public short OffsetX;
+        public short OffsetY;
 
-        public bool loading;
+        public bool Loading;
 
-        public string? debugValue;
+        public string? DebugValue;
 
-        public bool debugMode = false;
+        public bool DebugMode = false;
 
-        public bool isLocked = false;
+        public bool IsLocked;
 
-        public AtkUnitBase* naviMapPointer => (AtkUnitBase*) ServiceManager.GameGui.GetAddonByName("_NaviMap", 1);
+        public AtkUnitBase* NaviMapPointer => (AtkUnitBase*) ServiceManager.GameGui.GetAddonByName("_NaviMap", 1);
 
         public ExcelSheet<Map>? Maps;
 
@@ -59,189 +59,172 @@ namespace MiniMappingway.Manager
         [Signature("44 0F 44 3D ?? ?? ?? ??", ScanType = ScanType.StaticAddress)]
         public readonly uint* MapSig2 = null!;
 
-        public List<CircleData> CircleData = new List<CircleData>();
-
-        public uint[] Colours = new uint[2];
+        public Queue<CircleData> CircleData = new();
 
         public NaviMapManager()
         {
             SignatureHelper.Initialise(this);
 
             Maps = ServiceManager.DataManager.GetExcelSheet<Map>();
-            updateNaviMap();
-            updateMap();
-            updateColourArray();
+            UpdateNaviMap();
+            UpdateMap();
         }
 
         public bool AddOrUpdateSource(string sourceName, uint colour)
         {
-            sourceDataDict.AddOrUpdate(sourceName, colour,(x,y) => colour);
-
-            personListsDict.TryAdd(sourceName, new ConcurrentDictionary<string,uint>());
+            SourceDataDict.AddOrUpdate(sourceName, colour,(_,_) => colour);
+            
             return true;
         }
 
         public bool AddOrUpdateSource(string sourceName, Vector4 colour)
         {
             var uintColor = ImGui.ColorConvertFloat4ToU32(colour);
-            sourceDataDict.AddOrUpdate(sourceName, uintColor, (x, y) => uintColor);
-
-            personListsDict.TryAdd(sourceName, new ConcurrentDictionary<string, uint>());
+            SourceDataDict.AddOrUpdate(sourceName, uintColor, (_, _) => uintColor);
+            
 
             return true;
         }
 
-        public void updateColourArray()
-        {
-            Colours[0] = ImGui.ColorConvertFloat4ToU32(ServiceManager.Configuration.friendColour);
-            Colours[1] = ImGui.ColorConvertFloat4ToU32(ServiceManager.Configuration.fcColour);
-        }
-
-        public bool updateNaviMap()
+        public bool UpdateNaviMap()
         {
 
-            if (naviMapPointer == null)
+            if (NaviMapPointer == null)
             {
                 return false;
             }
 
-            unsafe
+            //There's probably a better way of doing this but I don't know it for now
+            IsLocked = ((AtkComponentCheckBox*)NaviMapPointer->GetNodeById(4)->GetComponent())->IsChecked; 
+
+            var rotationPtr = (float*)((nint)NaviMapPointer + 0x254);
+            var naviScalePtr = (float*)((nint)NaviMapPointer + 0x24C);
+            if (NaviMapPointer->UldManager.LoadedState != AtkLoadState.Loaded)
             {
-
-                //There's probably a better way of doing this but I don't know it for now
-                isLocked = ((AtkComponentCheckBox*)naviMapPointer->GetNodeById(4)->GetComponent())->IsChecked; 
-
-                var rotationPtr = (float*)((nint)naviMapPointer + 0x254);
-                var naviScalePtr = (float*)((nint)naviMapPointer + 0x24C);
-                if (naviMapPointer->UldManager.LoadedState != AtkLoadState.Loaded)
-                {
-                    return false;
-                }
-                try
-                {
-                    rotation = *rotationPtr;
-                    zoom = *naviScalePtr;
-                }
-                catch
-                {
-
-                }
-
-                X = naviMapPointer->X;
-                Y = naviMapPointer->Y;
-                naviScale = naviMapPointer->Scale;
-                visible = ((naviMapPointer->VisibilityFlags & 0x03) == 0);
+                return false;
             }
+            try
+            {
+                Rotation = *rotationPtr;
+                Zoom = *naviScalePtr;
+            }
+            catch
+            {
+                // ignored
+            }
+
+            X = NaviMapPointer->X;
+            Y = NaviMapPointer->Y;
+            NaviScale = NaviMapPointer->Scale;
+            Visible = ((NaviMapPointer->VisibilityFlags & 0x03) == 0);
             return true;
         }
 
-        public unsafe void CheckIfLoading()
+        public bool CheckIfLoading()
         {
-            var LocationTitle = (AtkUnitBase*)ServiceManager.GameGui.GetAddonByName("_LocationTitle", 1);
-            var FadeMiddle = (AtkUnitBase*)ServiceManager.GameGui.GetAddonByName("FadeMiddle", 1);
-            loading =
-                (LocationTitle != null && LocationTitle->IsVisible) ||
-                (FadeMiddle != null && FadeMiddle->IsVisible);
+            var locationTitle = (AtkUnitBase*)ServiceManager.GameGui.GetAddonByName("_LocationTitle", 1);
+            var fadeMiddle = (AtkUnitBase*)ServiceManager.GameGui.GetAddonByName("FadeMiddle", 1);
+            return Loading =
+                (locationTitle->IsVisible) ||
+                (fadeMiddle->IsVisible);
         }
 
-        public void updateMap()
+        public void UpdateMap()
         {
             if (Maps != null)
             {
-                Dalamud.Logging.PluginLog.Verbose("Updating Map");
+                PluginLog.Verbose("Updating Map");
 
-                var map = Maps.GetRow(getMapId());
+                var map = Maps.GetRow(GetMapId());
 
                 if (map == null) { return; }
 
                 if (map.SizeFactor != 0)
                 {
-                    zoneScale = (float)map.SizeFactor / 100;
+                    ZoneScale = (float)map.SizeFactor / 100;
                 }
                 else
                 {
-                    zoneScale = 1;
+                    ZoneScale = 1;
                 }
-                offsetX = map.OffsetX;
-                offsetY = map.OffsetY;
+                OffsetX = map.OffsetX;
+                OffsetY = map.OffsetY;
 
             }
         }
 
-        private unsafe uint getMapId()
+        private uint GetMapId()
         {
             return *MapSig1 == 0 ? *MapSig2 : *MapSig1;
         }
 
         public bool ClearPersonBag(string sourceName)
         {
-            if(personListsDict.TryGetValue(sourceName, out var personBag))
+            PersonDict.AsParallel().ForAll(x =>
             {
-                personBag.Clear();
-                return true;
-            }
-            return false;
-        }
-        public bool OverwriteWholeBag(string sourceName, List<PersonDetails> list) 
-        {
-            if(personListsDict.TryGetValue(sourceName,out var personBag))
-            {
-                var success = true;
-                personBag.Clear();
-                foreach (var person in list)
+                if (x.Value.SourceName == sourceName)
                 {
-                    if(!personBag.TryAdd(person.Name, person.Id))
-                    {
-                        success = false;
-                    }
+                    PersonDict.Remove(x.Key, out _);
                 }
-                return success;
+            });
+            return true;
+        }
+        public bool OverwriteWholeBag(string sourceName, List<PersonDetails> list)
+        {
+            ClearPersonBag(sourceName);
+
+            var success = true;
+            foreach (var person in list)
+            {
+                var personIndex = MarkerUtility.GetObjIndexById(person.Id);
+                if (personIndex == null)
+                {
+                    continue;
+                }
+                if (!PersonDict.TryAdd((int)personIndex, person))
+                {
+                    success = false;
+                }
             }
-            return false;
+            return success;
         }
 
-        public bool AddToBag(string sourceName, PersonDetails details)
+        public bool AddToBag(PersonDetails details)
         {
-            if(personListsDict.TryGetValue(sourceName,out var personList))
+            var personIndex = MarkerUtility.GetObjIndexById(details.Id);
+            if (personIndex == null)
             {
-                return personList.TryAdd(details.Name, details.Id);
+                return false;
             }
-            return false;
+            return PersonDict.TryAdd((int)personIndex, details);
         }
 
-        public bool RemoveFromBag(string sourceName, uint id)
+        public bool RemoveFromBag(uint id)
         {
-            if (personListsDict.TryGetValue(sourceName, out var personList))
-            {
-                var entry = personList.First(x => x.Value == id);
-                return personList.TryRemove(entry);
-            }
-            return false;
+                var entry = PersonDict.First(x => x.Value.Id == id);
+                return PersonDict.TryRemove(entry);
 
         }
 
-        public bool RemoveFromBag(string sourceName, string Name)
+        public bool RemoveFromBag(string name)
         {
-            if (personListsDict.TryGetValue(sourceName, out var personList))
-            {
-                var entry = personList.First(x => x.Key == Name);
-                return personList.TryRemove(entry);
-            }
-            return false;
+                var entry = PersonDict.First(x => x.Value.Name == name);
+                return PersonDict.TryRemove(entry);
+            
         }
 
         public bool RemoveSourceAndPeople(string sourceName)
         {
-            var successPerson = personListsDict.TryRemove(sourceName, out _);
-            var successSource = sourceDataDict.TryRemove(sourceName, out _);
+            var successPerson = ClearPersonBag(sourceName);
+            var successSource = SourceDataDict.TryRemove(sourceName, out _);
 
             return successPerson && successSource;
         }
 
         public void Dispose()
         {
-            personListsDict.Clear();
-            sourceDataDict.Clear();
+            PersonDict.Clear();
+            SourceDataDict.Clear();
         }
     }
 }

@@ -1,18 +1,19 @@
-﻿using MiniMappingway.Window;
-using System;
+﻿using System;
+using Dalamud.Logging;
+using MiniMappingway.Window;
 
 namespace MiniMappingway.Manager
 {
     public class WindowManager : IDisposable
     {
 
-        internal readonly NaviMapWindow naviMapWindow = new NaviMapWindow();
+        internal readonly NaviMapWindow NaviMapWindow = new();
 
         public void AddWindowsToWindowSystem()
         {
-            Dalamud.Logging.PluginLog.Verbose("Adding Windows To Window System");
+            PluginLog.Verbose("Adding Windows To Window System");
 
-            ServiceManager.WindowSystem.AddWindow(naviMapWindow);
+            ServiceManager.WindowSystem.AddWindow(NaviMapWindow);
         }
 
         public void Dispose()

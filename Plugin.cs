@@ -2,8 +2,10 @@
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.IoC;
+using Dalamud.Logging;
 using Dalamud.Plugin;
 using ImGuiNET;
+using MiniMappingway.Manager;
 
 namespace MiniMappingway
 {
@@ -11,8 +13,8 @@ namespace MiniMappingway
     {
         public string Name => "Mini-Mappingway";
 
-        private const string commandName = "/mmway";
-        private const string commandNameDebug = "/mmwaydebug";
+        private const string CommandName = "/mmway";
+        private const string CommandNameDebug = "/mmwaydebug";
 
 
         public delegate void OnMessageDelegate(XivChatType type, uint senderId, ref SeString sender, ref SeString message, ref bool isHandled);
@@ -23,7 +25,7 @@ namespace MiniMappingway
             pluginInterface.Create<ServiceManager>();
 
             ServiceManager.Configuration = ServiceManager.DalamudPluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
-            ServiceManager.Configuration.Initialize(ServiceManager.DalamudPluginInterface);
+            ServiceManager.Configuration.Initialize();
 
             #region Initialise Managers
 
@@ -44,49 +46,57 @@ namespace MiniMappingway
 
             #region Setup Commands and Actions
 
-            ServiceManager.CommandManager.AddHandler(commandName, new CommandInfo(OnCommand)
+            ServiceManager.CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
             {
                 HelpMessage = "Opens Mini-Mappingway settings"
             });
 
-            ServiceManager.CommandManager.AddHandler(commandNameDebug, new CommandInfo(OnCommand)
-            {
-                
-            });
-            ServiceManager.DalamudPluginInterface.UiBuilder.Draw += DrawUI;
+            ServiceManager.CommandManager.AddHandler(CommandNameDebug, new CommandInfo(OnCommand));
+            ServiceManager.DalamudPluginInterface.UiBuilder.Draw += DrawUi;
 
             ServiceManager.DalamudPluginInterface.UiBuilder.Draw += ServiceManager.WindowSystem.Draw;
-            ServiceManager.DalamudPluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
+            ServiceManager.DalamudPluginInterface.UiBuilder.OpenConfigUi += DrawConfigUi;
 
-            ServiceManager.ClientState.TerritoryChanged += (i, x) => { ServiceManager.NaviMapManager.updateMap(); };
+            ServiceManager.ClientState.TerritoryChanged += TerritoryChanged;
 
             #endregion
         }
 
         public void Dispose()
         {
-            ServiceManager.CommandManager.RemoveHandler(commandName);
-            ServiceManager.CommandManager.RemoveHandler(commandNameDebug);
+            ServiceManager.CommandManager.RemoveHandler(CommandName);
+            ServiceManager.CommandManager.RemoveHandler(CommandNameDebug);
+            ServiceManager.DalamudPluginInterface.UiBuilder.Draw -= DrawUi;
+            ServiceManager.DalamudPluginInterface.UiBuilder.Draw -= ServiceManager.WindowSystem.Draw;
+            ServiceManager.DalamudPluginInterface.UiBuilder.OpenConfigUi -= DrawConfigUi;
+            ServiceManager.ClientState.TerritoryChanged -= TerritoryChanged;
+            ServiceManager.Dispose();
+
         }
 
-        private void OnCommand(string command, string args)
+        private void TerritoryChanged(object? sender, ushort e)
         {
-            Dalamud.Logging.PluginLog.Verbose("Command received");
+            ServiceManager.NaviMapManager.UpdateMap();
+        }
+
+        private void OnCommand(string? command, string args)
+        {
+            PluginLog.Verbose("Command received");
 
             if (command != null && command == "/mmway")
             {
                 ServiceManager.PluginUi.SettingsVisible = true;
             }
-            if (command != null && command == commandNameDebug)
+            if (command != null && command == CommandNameDebug)
             {
-                ServiceManager.NaviMapManager.debugMode = !ServiceManager.NaviMapManager.debugMode;
-                if (ServiceManager.NaviMapManager.debugMode)
+                ServiceManager.NaviMapManager.DebugMode = !ServiceManager.NaviMapManager.DebugMode;
+                if (ServiceManager.NaviMapManager.DebugMode)
                 {
-                    ServiceManager.WindowManager.naviMapWindow.Flags &= ~ImGuiWindowFlags.NoBackground;
+                    ServiceManager.WindowManager.NaviMapWindow.Flags &= ~ImGuiWindowFlags.NoBackground;
                 }
                 else
                 {
-                    ServiceManager.WindowManager.naviMapWindow.Flags |= ImGuiWindowFlags.NoBackground;
+                    ServiceManager.WindowManager.NaviMapWindow.Flags |= ImGuiWindowFlags.NoBackground;
 
                 }
             }
@@ -94,13 +104,13 @@ namespace MiniMappingway
 
         }
 
-        private void DrawUI()
+        private void DrawUi()
         {
             ServiceManager.PluginUi.DrawSettingsWindow();
         }
-        private void DrawConfigUI()
+        private void DrawConfigUi()
         {
-            Dalamud.Logging.PluginLog.Verbose("Draw config ui on");
+            PluginLog.Verbose("Draw config ui on");
             ServiceManager.PluginUi.SettingsVisible = true;
         }
     }

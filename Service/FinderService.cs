@@ -1,178 +1,220 @@
-﻿using Dalamud.Game.ClientState.Objects.Enums;
-using FFXIVClientStructs.FFXIV.Client.Game.Character;
-using ImGuiNET;
-using MiniMappingway.Model;
-using System;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
+using Dalamud.Game;
+using Dalamud.Game.ClientState.Objects.Enums;
+using FFXIVClientStructs.FFXIV.Client.Game.Character;
+using MiniMappingway.Manager;
+using MiniMappingway.Model;
+using MiniMappingway.Utility;
 
 namespace MiniMappingway.Service
 {
     public sealed class FinderService : IDisposable
     {
-        const string FCMembersKey = "fcmembers";
-        const string friendKey = "friends";
+        public const string FcMembersKey = "fcmembers";
+        public const string FriendKey = "friends";
+        private readonly IEnumerable<int> _enumerable;
+        private IEnumerator<int> _enumerator;
+        private int _index;
 
-        public bool inCombat = false;
 
-        private readonly CancellationTokenSource cancellationToken = new();
 
         public FinderService()
         {
-            ServiceManager.NaviMapManager.AddOrUpdateSource(FCMembersKey, ServiceManager.Configuration.fcColour);
-            ServiceManager.NaviMapManager.AddOrUpdateSource(friendKey, ServiceManager.Configuration.friendColour);
-            CheckNewPeople();
-            CheckStillInObjectTable();
+            ServiceManager.NaviMapManager.AddOrUpdateSource(FcMembersKey, ServiceManager.Configuration.FcColour);
+            ServiceManager.NaviMapManager.AddOrUpdateSource(FriendKey, ServiceManager.Configuration.FriendColour);
+            ServiceManager.Framework.Update += Iterate;
+            //ServiceManager.Framework.Update += CheckStillInObjectTable;
+
+
+            _enumerable = Enumerable.Range(2, 200).Where(x => x % 2 == 0);
+            _enumerator = _enumerable.GetEnumerator();
+
+
         }
 
-        private void CheckNewPeople()
+        private void Iterate(Framework framework)
         {
-            ServiceManager.Framework.RunOnTick(CheckNewPeople, TimeSpan.FromSeconds(0.5), cancellationToken: cancellationToken.Token);
 
-            if (ServiceManager.WindowManager.naviMapWindow.checksPassed)
+            CheckNewPeople(_index);
+            CheckSamePerson(_index);
+            var iteratorValid = _enumerator.MoveNext();
+            if (!iteratorValid)
             {
-                Task.Run(() => { LookFor(); });
+                _enumerator = _enumerable.GetEnumerator();
+                _enumerator.MoveNext();
+
+            }
+            _index = _enumerator.Current;
+        }
+
+        private static void CheckSamePerson(int i)
+        {
+            ServiceManager.NaviMapManager.PersonDict.TryGetValue(i, out var person);
+            if (person == null)
+            {
+                return;
+            }
+
+            if (ServiceManager.ObjectTable[i] == null)
+            {
+                return;
+            }
+            if (ServiceManager.ObjectTable[i]?.Name.ToString() != person.Name)
+            {
+                ServiceManager.NaviMapManager.RemoveFromBag(person.Id);
             }
         }
 
-        private void CheckStillInObjectTable()
+        private static void CheckNewPeople(int i)
         {
-            ServiceManager.Framework.RunOnTick(CheckStillInObjectTable, TimeSpan.FromSeconds(0.5), cancellationToken: cancellationToken.Token);
-
-            Task.Run(() =>
+            if (MarkerUtility.ChecksPassed)
             {
-                foreach (var personList in ServiceManager.NaviMapManager.personListsDict)
+                LookFor(i);
+            }
+        }
+
+        private static void CheckStillInObjectTable(Framework framework)
+        {
+            if (!MarkerUtility.ChecksPassed)
+            {
+                return;
+            }
+
+            Parallel.ForEach(ServiceManager.NaviMapManager.PersonDict, person =>
+            {
+                var existsAndCorrectPerson = false;
+                foreach (var x in Enumerable.Range(2, 200).Where(x => x % 2 == 0))
                 {
-                    foreach (var person in personList.Value)
+                    if (ServiceManager.ObjectTable[x]?.ObjectKind != ObjectKind.Player)
                     {
-                        var existsAndCorrectPerson = ServiceManager.ObjectTable.Any(x => x.ObjectId == person.Value && x.Name.ToString() == person.Key);
-                        if (!existsAndCorrectPerson)
-                        {
-                            ServiceManager.NaviMapManager.RemoveFromBag(personList.Key, person.Value);
-                        }
+                        continue;
+                    }
+
+                    if (person.Value.Id == ServiceManager.ObjectTable[x]?.ObjectId &&
+                        ServiceManager.ObjectTable[x]?.Name.ToString() == person.Value.Name)
+                    {
+                        existsAndCorrectPerson = true;
                     }
                 }
-            });
 
+                if (!existsAndCorrectPerson)
+                {
+                    Dalamud.Logging.PluginLog.Verbose($"Removing person {person.Value.Name}");
+                    Dalamud.Logging.PluginLog.Verbose($"old {person.Value.SourceName} {person.Value.Id}");
+                    ServiceManager.NaviMapManager.RemoveFromBag(person.Value.Id);
+                }
+
+
+            });
         }
 
-        public unsafe void LookFor()
+        private static unsafe void LookFor(int i)
         {
-            if (!ServiceManager.Configuration.showFcMembers && !ServiceManager.Configuration.showFriends)
+            if (!ServiceManager.Configuration.ShowFcMembers && !ServiceManager.Configuration.ShowFriends)
             {
                 return;
             }
 
-            byte* FC = null;
-            if (ServiceManager.ObjectTable == null || ServiceManager.ObjectTable.Length <= 0)
-            {
-                return;
-            }
+            byte* fc = null;
             try
             {
-                unsafe
+                if (ServiceManager.ObjectTable[0] is null)
                 {
-                    if(ServiceManager.ObjectTable[0] is null) {
-                        return;
-                    }
-                    var player = (Character*)ServiceManager.ObjectTable[0]?.Address;
-                    if (player == null)
-                    {
-                        return;
-                    }
-
-                    if (((StatusFlags)player->StatusFlags).HasFlag(StatusFlags.InCombat))
-                    {
-                        return;
-                    }
-                    FC = player->FreeCompanyTag;
-
+                    return;
                 }
+                var player = (Character*)ServiceManager.ObjectTable[0]?.Address;
+                if (player == null)
+                {
+                    return;
+                }
+
+                if (((StatusFlags)player->StatusFlags).HasFlag(StatusFlags.InCombat))
+                {
+                    return;
+                }
+                fc = player->FreeCompanyTag;
             }
             catch
             {
-
+                // ignored
             }
 
             //Parallel.For(1, ServiceManager.ObjectTable.Length, (i, state) =>
-            var iterator = Enumerable.Range(2, 200).Where(x => x % 2 == 0);
-            Parallel.ForEach(iterator, i =>
+
+            var alreadyInFriendBag = false;
+            var alreadyInFcBag = false;
+            var obj = ServiceManager.ObjectTable[i];
+
+            if (obj == null) { return; }
+
+            if (ServiceManager.NaviMapManager.PersonDict
+                .Any(x => x.Value.Id == obj.ObjectId && x.Value.SourceName == FriendKey))
             {
-                bool alreadyInFriendBag = false;
-                bool alreadyInFcbag = false;
-                var obj = ServiceManager.ObjectTable[i];
+                alreadyInFriendBag = true;
+            }
 
-                if (obj == null) { return; }
-                unsafe
+            if (ServiceManager.NaviMapManager.PersonDict
+                .Any(x => x.Value.Id == obj.ObjectId && x.Value.SourceName == FcMembersKey))
+            {
+                alreadyInFcBag = true;
+            }
+
+
+            if (alreadyInFcBag && alreadyInFriendBag)
+            {
+                return;
+            }
+
+            var ptr = obj.Address;
+            var charPointer = (Character*)ptr;
+            if (charPointer->GameObject.ObjectKind != (byte)ObjectKind.Player)
+            {
+                return;
+            }
+            if (((StatusFlags)charPointer->StatusFlags).HasFlag(StatusFlags.AllianceMember))
+            {
+                return;
+            }
+
+            //IsCasting currently means friend
+            if (ServiceManager.Configuration.ShowFriends && !alreadyInFriendBag)
+            {
+                if (((StatusFlags)charPointer->StatusFlags).HasFlag(StatusFlags.IsCasting))
                 {
-                    if(ServiceManager.NaviMapManager.personListsDict.TryGetValue(friendKey,out var friendBag))
-                    {
-                        if (friendBag.Any(x => x.Value == obj.ObjectId))
-                        {
-                            alreadyInFriendBag = true;
-                        }
-                    }
+                    var personDetails = new PersonDetails(obj.Name.ToString(), obj.ObjectId, FriendKey, obj.Address);
+                    Dalamud.Logging.PluginLog.Verbose("adding person friend");
 
-                    if (ServiceManager.NaviMapManager.personListsDict.TryGetValue(FCMembersKey, out var fCBag))
-                    {
-                        if (fCBag.Any(x => x.Value == obj.ObjectId))
-                        {
-                            alreadyInFcbag = true;
-                        }
-                    }
+                    ServiceManager.NaviMapManager.AddToBag(personDetails);
 
-                    if(alreadyInFcbag && alreadyInFriendBag)
-                    {
-                        return;
-                    }
-
-                    var ptr = obj.Address;
-                    var charPointer = (Character*)ptr;
-                    if (charPointer->GameObject.ObjectKind != (byte)ObjectKind.Player)
-                    {
-                        return;
-                    }
-                    if (((StatusFlags)charPointer->StatusFlags).HasFlag(StatusFlags.AllianceMember))
-                    {
-                        return;
-                    }
-                    
-                    //iscasting currently means friend
-                    if (ServiceManager.Configuration.showFriends && !alreadyInFriendBag)
-                    {
-                        if (((StatusFlags)charPointer->StatusFlags).HasFlag(StatusFlags.IsCasting))
-                        {
-                            var personDetails = new PersonDetails(obj.Name.ToString(), obj.ObjectId);
-
-                            ServiceManager.NaviMapManager.AddToBag("friends", personDetails);
-
-                        }
-                    }
-
-                    if (ServiceManager.Configuration.showFcMembers && !alreadyInFcbag)
-                    {
-                        if (FC == null)
-                        {
-                            return;
-                        }
-                        var tempFc = new ReadOnlySpan<byte>(charPointer->FreeCompanyTag, 7);
-                        var playerFC = new ReadOnlySpan<byte>(FC, 7);
-                        if (FC->CompareTo(0) == 0)
-                        {
-                            return;
-                        }
-                        if (playerFC.SequenceEqual(tempFc))
-                        {
-                            var personDetails = new PersonDetails(obj.Name.ToString(), obj.ObjectId);
-
-                            ServiceManager.NaviMapManager.AddToBag("fc", personDetails);
-                        }
-                    }
                 }
-            });
+            }
 
-            
+            if (ServiceManager.Configuration.ShowFcMembers && !alreadyInFcBag)
+            {
+                if (fc == null)
+                {
+                    return;
+                }
+                var tempFc = new ReadOnlySpan<byte>(charPointer->FreeCompanyTag, 7);
+                var playerFc = new ReadOnlySpan<byte>(fc, 7);
+                if (fc->CompareTo(0) == 0)
+                {
+                    return;
+                }
+                if (playerFc.SequenceEqual(tempFc))
+                {
+                    Dalamud.Logging.PluginLog.Verbose("adding person fc");
+
+                    var personDetails = new PersonDetails(obj.Name.ToString(), obj.ObjectId, FcMembersKey, obj.Address);
+
+                    ServiceManager.NaviMapManager.AddToBag(personDetails);
+                }
+            }
+
+
 
         }
 
@@ -180,7 +222,8 @@ namespace MiniMappingway.Service
 
         public void Dispose()
         {
-            cancellationToken.Cancel();
+            ServiceManager.Framework.Update -= Iterate;
+            //ServiceManager.Framework.Update -= CheckStillInObjectTable;
         }
 
     }

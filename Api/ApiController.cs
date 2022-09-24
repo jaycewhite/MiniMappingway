@@ -1,8 +1,9 @@
-﻿using Dalamud.Plugin.Ipc;
-using MiniMappingway.Model;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Numerics;
+using Dalamud.Plugin.Ipc;
+using MiniMappingway.Manager;
+using MiniMappingway.Model;
 
 namespace MiniMappingway.Api
 {
@@ -22,35 +23,35 @@ namespace MiniMappingway.Api
     /// </summary>
     public class ApiController : IDisposable
     {
-        private const int apiVersionMajor = 1;
-        private const int apiVersionMinor = 0;
+        private const int ApiVersionMajor = 1;
+        private const int ApiVersionMinor = 0;
 
-        ICallGateProvider<Tuple<int, int>> GetVersionIPC = ServiceManager.DalamudPluginInterface.GetIpcProvider<Tuple<int, int>>("MiniMappingway.CheckVersion");
+        ICallGateProvider<Tuple<int, int>> _getVersionIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<Tuple<int, int>>("MiniMappingway.CheckVersion");
 
-        ICallGateProvider<string, Vector4, bool> RegisterOrUpdateSourceVecIPC = ServiceManager.DalamudPluginInterface.GetIpcProvider<string,Vector4,bool>("MiniMappingway.RegisterOrUpdateSourceVec");
+        ICallGateProvider<string, Vector4, bool> _registerOrUpdateSourceVecIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<string,Vector4,bool>("MiniMappingway.RegisterOrUpdateSourceVec");
 
-        ICallGateProvider<string, uint, bool> RegisterOrUpdateSourceUintIPC = ServiceManager.DalamudPluginInterface.GetIpcProvider<string,uint,bool>("MiniMappingway.RegisterOrUpdateSourceUint");
+        ICallGateProvider<string, uint, bool> _registerOrUpdateSourceUintIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<string,uint,bool>("MiniMappingway.RegisterOrUpdateSourceUint");
 
-        ICallGateProvider<string, List<PersonDetails>, bool> OverwriteListIPC = ServiceManager.DalamudPluginInterface.GetIpcProvider<string, List<PersonDetails>, bool>("MiniMappingway.OverwriteList");
+        ICallGateProvider<string, List<PersonDetails>, bool> _overwriteListIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<string, List<PersonDetails>, bool>("MiniMappingway.OverwriteList");
 
-        ICallGateProvider<string, string, uint, bool> AddPersonIPC = ServiceManager.DalamudPluginInterface.GetIpcProvider<string, string, uint, bool>("MiniMappingway.AddPerson");
+        ICallGateProvider<string, string, uint, bool> _addPersonIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<string, string, uint, bool>("MiniMappingway.AddPerson");
 
-        ICallGateProvider<string, string, bool> RemovePersonByNameIPC = ServiceManager.DalamudPluginInterface.GetIpcProvider<string, string, bool>("MiniMappingway.RemovePersonByName");
+        ICallGateProvider<string, bool> _removePersonByNameIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<string, bool>("MiniMappingway.RemovePersonByName");
 
-        ICallGateProvider<string, uint, bool> RemovePersonByIdIPC = ServiceManager.DalamudPluginInterface.GetIpcProvider<string, uint, bool>("MiniMappingway.RemovePersonByUint");
+        ICallGateProvider<uint, bool> _removePersonByIdIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<uint, bool>("MiniMappingway.RemovePersonByUint");
 
-        ICallGateProvider<string, bool> RemoveSourceAndPeopleIPC = ServiceManager.DalamudPluginInterface.GetIpcProvider<string, bool>("MiniMappingway.RemoveSourceAndPeople");
+        ICallGateProvider<string, bool> _removeSourceAndPeopleIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<string, bool>("MiniMappingway.RemoveSourceAndPeople");
 
         public ApiController()
         {
-            GetVersionIPC.RegisterFunc(CheckVersion);
-            RegisterOrUpdateSourceVecIPC.RegisterFunc(RegisterOrUpdateSource);
-            RegisterOrUpdateSourceUintIPC.RegisterFunc(RegisterOrUpdateSource);
-            OverwriteListIPC.RegisterFunc(OverwriteList);
-            AddPersonIPC.RegisterFunc(AddPerson);
-            RemovePersonByNameIPC.RegisterFunc(RemovePerson);
-            RemovePersonByIdIPC.RegisterFunc(RemovePerson);
-            RemoveSourceAndPeopleIPC.RegisterFunc(RemoveSourceAndPeople);
+            _getVersionIpc.RegisterFunc(CheckVersion);
+            _registerOrUpdateSourceVecIpc.RegisterFunc(RegisterOrUpdateSource);
+            _registerOrUpdateSourceUintIpc.RegisterFunc(RegisterOrUpdateSource);
+            _overwriteListIpc.RegisterFunc(OverwriteList);
+            _addPersonIpc.RegisterFunc(AddPerson);
+            _removePersonByNameIpc.RegisterFunc(RemovePerson);
+            _removePersonByIdIpc.RegisterFunc(RemovePerson);
+            _removeSourceAndPeopleIpc.RegisterFunc(RemoveSourceAndPeople);
         }
 
         /// <summary>
@@ -59,7 +60,7 @@ namespace MiniMappingway.Api
         /// <returns>A tuple of Major and Minor version numbers</returns>
         private Tuple<int,int> CheckVersion()
         {
-            return new Tuple<int, int>(apiVersionMajor, apiVersionMinor);
+            return new Tuple<int, int>(ApiVersionMajor, ApiVersionMinor);
         }
 
         /// <summary>
@@ -104,29 +105,32 @@ namespace MiniMappingway.Api
         /// <returns>Success boolean</returns>
         private bool AddPerson(string sourceName, string name, uint id)
         {
-            return ServiceManager.NaviMapManager.AddToBag(sourceName, new PersonDetails(name, id));
+            var person = ServiceManager.ObjectTable.SearchById(id);
+            if (person == null)
+            {
+                return false;
+            }
+            return ServiceManager.NaviMapManager.AddToBag(new PersonDetails(name, id, sourceName,person.Address));
         }
 
         /// <summary>
         /// Remove person from list for source by name
         /// </summary>
-        /// <param name="sourceName">Source name</param>
-        /// <param name="Name">Name of person as seen in ObjectTable</param>
+        /// <param name="name">Name of person as seen in ObjectTable</param>
         /// <returns>Success boolean</returns>
-        private bool RemovePerson(string sourceName, string Name)
+        private bool RemovePerson(string name)
         {
-            return ServiceManager.NaviMapManager.RemoveFromBag(sourceName, Name);
+            return ServiceManager.NaviMapManager.RemoveFromBag(name);
         }
 
         /// <summary>
         /// Remove person from list for source by uint
         /// </summary>
-        /// <param name="sourceName">Source name</param>
-        /// <param name="Id">Id of person in ObjectTable</param>
+        /// <param name="id">Id of person in ObjectTable</param>
         /// <returns>Success boolean</returns>
-        private bool RemovePerson(string sourceName, uint id)
+        private bool RemovePerson(uint id)
         {
-            return ServiceManager.NaviMapManager.RemoveFromBag(sourceName, id);
+            return ServiceManager.NaviMapManager.RemoveFromBag(id);
         }
 
         /// <summary>
@@ -141,14 +145,14 @@ namespace MiniMappingway.Api
 
         public void Dispose()
         {
-            GetVersionIPC.UnregisterFunc();
-            RegisterOrUpdateSourceVecIPC.UnregisterFunc();
-            RegisterOrUpdateSourceUintIPC.UnregisterFunc();
-            OverwriteListIPC.UnregisterFunc();
-            AddPersonIPC.UnregisterFunc();
-            RemovePersonByNameIPC.UnregisterFunc();
-            RemovePersonByIdIPC.UnregisterFunc();
-            RemoveSourceAndPeopleIPC.UnregisterFunc();
+            _getVersionIpc.UnregisterFunc();
+            _registerOrUpdateSourceVecIpc.UnregisterFunc();
+            _registerOrUpdateSourceUintIpc.UnregisterFunc();
+            _overwriteListIpc.UnregisterFunc();
+            _addPersonIpc.UnregisterFunc();
+            _removePersonByNameIpc.UnregisterFunc();
+            _removePersonByIdIpc.UnregisterFunc();
+            _removeSourceAndPeopleIpc.UnregisterFunc();
         }
     }
 }
