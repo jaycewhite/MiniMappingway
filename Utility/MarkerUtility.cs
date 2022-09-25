@@ -32,7 +32,7 @@ namespace MiniMappingway.Utility
 
             if (personObj == null || !personObj.IsValid() || ServiceManager.ObjectTable[person.Key] == null)
             {
-                ServiceManager.NaviMapManager.RemoveFromBag(person.Value.Id);
+                ServiceManager.NaviMapManager.RemoveFromBag(person.Value.Id, person.Value.SourceName);
                 return null;
             }
             unsafe
@@ -111,13 +111,18 @@ namespace MiniMappingway.Utility
             //to line up with minimap pivot better
             _playerCirclePos.Y -= 5f;
 
-            foreach (var person in ServiceManager.NaviMapManager.PersonDict)
+            foreach (var dict in ServiceManager.NaviMapManager.PersonDict)
             {
-                var marker = person.CalculateCirclePosition();
-                if (marker != null)
+                foreach (var person in dict.Value)
                 {
-                    ServiceManager.NaviMapManager.CircleData.Enqueue(marker);
+                    var marker = person.CalculateCirclePosition();
+                    if (marker != null)
+                    {
+                        ServiceManager.NaviMapManager.CircleData.Enqueue(marker);
+                    }
                 }
+
+                
             }
 
             ////for debugging center point

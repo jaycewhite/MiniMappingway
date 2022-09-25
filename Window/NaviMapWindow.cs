@@ -32,15 +32,6 @@ namespace MiniMappingway.Window
         {
             var drawList = ImGui.GetWindowDrawList();
 
-            while (ServiceManager.NaviMapManager.CircleData.Any())
-            {
-                ServiceManager.NaviMapManager.CircleData.TryDequeue(out var circle);
-                if (circle == null)
-                {
-                    continue;
-                }
-                drawList.AddCircleFilled(circle.Position, ServiceManager.Configuration.CircleSize, ServiceManager.NaviMapManager.SourceDataDict[circle.SourceName]);
-            }
             if (ServiceManager.NaviMapManager.DebugMode)
             {
                 ImGui.Text($"zoom {ServiceManager.NaviMapManager.Zoom}");
@@ -54,8 +45,25 @@ namespace MiniMappingway.Window
                 ImGui.Text($"showfc {ServiceManager.Configuration.ShowFcMembers}");
                 ImGui.Text($"showfriend {ServiceManager.Configuration.ShowFriends}");
                 ImGui.Text($"circleCount {ServiceManager.NaviMapManager.CircleData.Count}");
-                ImGui.Text($"personDict {ServiceManager.NaviMapManager.PersonDict.Count}");
+                int count = 0;
+                foreach (var dict in ServiceManager.NaviMapManager.PersonDict)
+                {
+                    count += dict.Value.Count;
+                }
+
+                ImGui.Text($"people {count}");
             }
+
+            while (ServiceManager.NaviMapManager.CircleData.Any())
+            {
+                ServiceManager.NaviMapManager.CircleData.TryDequeue(out var circle);
+                if (circle == null)
+                {
+                    continue;
+                }
+                drawList.AddCircleFilled(circle.Position, ServiceManager.Configuration.CircleSize, ServiceManager.NaviMapManager.SourceDataDict[circle.SourceName]);
+            }
+            
         }
 
         public override bool DrawConditions()

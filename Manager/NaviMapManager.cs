@@ -18,7 +18,7 @@ namespace MiniMappingway.Manager
     public unsafe class NaviMapManager : IDisposable
     {
 
-        public ConcurrentDictionary<int, PersonDetails> PersonDict = new();
+        public ConcurrentDictionary<string, ConcurrentDictionary<int, PersonDetails>> PersonDict = new();
 
         public ConcurrentDictionary<string, uint> SourceDataDict = new();
 
@@ -49,7 +49,7 @@ namespace MiniMappingway.Manager
 
         public bool IsLocked;
 
-        public AtkUnitBase* NaviMapPointer => (AtkUnitBase*) ServiceManager.GameGui.GetAddonByName("_NaviMap", 1);
+        public AtkUnitBase* NaviMapPointer => (AtkUnitBase*)ServiceManager.GameGui.GetAddonByName("_NaviMap", 1);
 
         public ExcelSheet<Map>? Maps;
 
@@ -72,8 +72,8 @@ namespace MiniMappingway.Manager
 
         public bool AddOrUpdateSource(string sourceName, uint colour)
         {
-            SourceDataDict.AddOrUpdate(sourceName, colour,(_,_) => colour);
-            
+            SourceDataDict.AddOrUpdate(sourceName, colour, (_, _) => colour);
+
             return true;
         }
 
@@ -81,7 +81,8 @@ namespace MiniMappingway.Manager
         {
             var uintColor = ImGui.ColorConvertFloat4ToU32(colour);
             SourceDataDict.AddOrUpdate(sourceName, uintColor, (_, _) => uintColor);
-            
+            PersonDict.AddOrUpdate(sourceName, new ConcurrentDictionary<int, PersonDetails>(),
+                (_, _) => new ConcurrentDictionary<int, PersonDetails>());
 
             return true;
         }
@@ -95,7 +96,7 @@ namespace MiniMappingway.Manager
             }
 
             //There's probably a better way of doing this but I don't know it for now
-            IsLocked = ((AtkComponentCheckBox*)NaviMapPointer->GetNodeById(4)->GetComponent())->IsChecked; 
+            IsLocked = ((AtkComponentCheckBox*)NaviMapPointer->GetNodeById(4)->GetComponent())->IsChecked;
 
             var rotationPtr = (float*)((nint)NaviMapPointer + 0x254);
             var naviScalePtr = (float*)((nint)NaviMapPointer + 0x24C);
@@ -160,13 +161,12 @@ namespace MiniMappingway.Manager
 
         public bool ClearPersonBag(string sourceName)
         {
-            PersonDict.AsParallel().ForAll(x =>
+            PersonDict.TryGetValue(sourceName, out var dict);
+            if (dict == null)
             {
-                if (x.Value.SourceName == sourceName)
-                {
-                    PersonDict.Remove(x.Key, out _);
-                }
-            });
+                return false;
+            }
+            dict.Clear();
             return true;
         }
         public bool OverwriteWholeBag(string sourceName, List<PersonDetails> list)
@@ -174,14 +174,23 @@ namespace MiniMappingway.Manager
             ClearPersonBag(sourceName);
 
             var success = true;
+
+            PersonDict.TryGetValue(sourceName, out var dict);
+
+            if (dict == null)
+            {
+                return false;
+            }
+
             foreach (var person in list)
             {
                 var personIndex = MarkerUtility.GetObjIndexById(person.Id);
+
                 if (personIndex == null)
                 {
                     continue;
                 }
-                if (!PersonDict.TryAdd((int)personIndex, person))
+                if (!dict.TryAdd((int)personIndex, person))
                 {
                     success = false;
                 }
@@ -191,26 +200,43 @@ namespace MiniMappingway.Manager
 
         public bool AddToBag(PersonDetails details)
         {
+            PersonDict.TryGetValue(details.SourceName, out var dict);
+
+            if (dict == null)
+            {
+                return false;
+            }
+
             var personIndex = MarkerUtility.GetObjIndexById(details.Id);
             if (personIndex == null)
             {
                 return false;
             }
-            return PersonDict.TryAdd((int)personIndex, details);
+            return dict.TryAdd((int)personIndex, details);
         }
 
-        public bool RemoveFromBag(uint id)
+        public bool RemoveFromBag(uint id, string sourceName)
         {
-                var entry = PersonDict.First(x => x.Value.Id == id);
-                return PersonDict.TryRemove(entry);
+            PersonDict.TryGetValue(sourceName, out var dict);
+            if (dict == null)
+            {
+                return false;
+            }
+            var entry = dict.First(x => x.Value.Id == id);
+            return dict.TryRemove(entry);
 
         }
 
-        public bool RemoveFromBag(string name)
+        public bool RemoveFromBag(string name, string sourceName)
         {
-                var entry = PersonDict.First(x => x.Value.Name == name);
-                return PersonDict.TryRemove(entry);
-            
+            PersonDict.TryGetValue(sourceName, out var dict);
+            if (dict == null)
+            {
+                return false;
+            }
+            var entry = dict.First(x => x.Value.Name == name);
+            return dict.TryRemove(entry);
+
         }
 
         public bool RemoveSourceAndPeople(string sourceName)

@@ -36,9 +36,9 @@ namespace MiniMappingway.Api
 
         ICallGateProvider<string, string, uint, bool> _addPersonIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<string, string, uint, bool>("MiniMappingway.AddPerson");
 
-        ICallGateProvider<string, bool> _removePersonByNameIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<string, bool>("MiniMappingway.RemovePersonByName");
+        ICallGateProvider<string, string, bool> _removePersonByNameIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<string, string, bool>("MiniMappingway.RemovePersonByName");
 
-        ICallGateProvider<uint, bool> _removePersonByIdIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<uint, bool>("MiniMappingway.RemovePersonByUint");
+        ICallGateProvider<uint, string, bool> _removePersonByIdIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<uint, string, bool>("MiniMappingway.RemovePersonByUint");
 
         ICallGateProvider<string, bool> _removeSourceAndPeopleIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<string, bool>("MiniMappingway.RemoveSourceAndPeople");
 
@@ -117,20 +117,22 @@ namespace MiniMappingway.Api
         /// Remove person from list for source by name
         /// </summary>
         /// <param name="name">Name of person as seen in ObjectTable</param>
+        /// <param name="sourceName">Name of source</param>
         /// <returns>Success boolean</returns>
-        private bool RemovePerson(string name)
+        private bool RemovePerson(string name, string sourceName)
         {
-            return ServiceManager.NaviMapManager.RemoveFromBag(name);
+            return ServiceManager.NaviMapManager.RemoveFromBag(name, sourceName);
         }
 
         /// <summary>
         /// Remove person from list for source by uint
         /// </summary>
         /// <param name="id">Id of person in ObjectTable</param>
+        /// <param name="sourceName">Name of source</param>
         /// <returns>Success boolean</returns>
-        private bool RemovePerson(uint id)
+        private bool RemovePerson(uint id, string sourceName)
         {
-            return ServiceManager.NaviMapManager.RemoveFromBag(id);
+            return ServiceManager.NaviMapManager.RemoveFromBag(id, sourceName);
         }
 
         /// <summary>

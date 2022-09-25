@@ -52,19 +52,22 @@ namespace MiniMappingway.Service
 
         private static void CheckSamePerson(int i)
         {
-            ServiceManager.NaviMapManager.PersonDict.TryGetValue(i, out var person);
-            if (person == null)
+            foreach (var dict in ServiceManager.NaviMapManager.PersonDict)
             {
-                return;
-            }
+                dict.Value.TryGetValue(i, out var person);
+                if (person == null)
+                {
+                    return;
+                }
 
-            if (ServiceManager.ObjectTable[i] == null)
-            {
-                return;
-            }
-            if (ServiceManager.ObjectTable[i]?.Name.ToString() != person.Name)
-            {
-                ServiceManager.NaviMapManager.RemoveFromBag(person.Id);
+                if (ServiceManager.ObjectTable[i] == null)
+                {
+                    return;
+                }
+                if (ServiceManager.ObjectTable[i]?.Name.ToString() != person.Name)
+                {
+                    ServiceManager.NaviMapManager.RemoveFromBag(person.Id,dict.Key);
+                }
             }
         }
 
@@ -76,40 +79,40 @@ namespace MiniMappingway.Service
             }
         }
 
-        private static void CheckStillInObjectTable(Framework framework)
-        {
-            if (!MarkerUtility.ChecksPassed)
-            {
-                return;
-            }
+        //private static void CheckStillInObjectTable(Framework framework)
+        //{
+        //    if (!MarkerUtility.ChecksPassed)
+        //    {
+        //        return;
+        //    }
 
-            Parallel.ForEach(ServiceManager.NaviMapManager.PersonDict, person =>
-            {
-                var existsAndCorrectPerson = false;
-                foreach (var x in Enumerable.Range(2, 200).Where(x => x % 2 == 0))
-                {
-                    if (ServiceManager.ObjectTable[x]?.ObjectKind != ObjectKind.Player)
-                    {
-                        continue;
-                    }
+        //    Parallel.ForEach(ServiceManager.NaviMapManager.PersonDict, person =>
+        //    {
+        //        var existsAndCorrectPerson = false;
+        //        foreach (var x in Enumerable.Range(2, 200).Where(x => x % 2 == 0))
+        //        {
+        //            if (ServiceManager.ObjectTable[x]?.ObjectKind != ObjectKind.Player)
+        //            {
+        //                continue;
+        //            }
 
-                    if (person.Value.Id == ServiceManager.ObjectTable[x]?.ObjectId &&
-                        ServiceManager.ObjectTable[x]?.Name.ToString() == person.Value.Name)
-                    {
-                        existsAndCorrectPerson = true;
-                    }
-                }
+        //            if (person.Value.Id == ServiceManager.ObjectTable[x]?.ObjectId &&
+        //                ServiceManager.ObjectTable[x]?.Name.ToString() == person.Value.Name)
+        //            {
+        //                existsAndCorrectPerson = true;
+        //            }
+        //        }
 
-                if (!existsAndCorrectPerson)
-                {
-                    Dalamud.Logging.PluginLog.Verbose($"Removing person {person.Value.Name}");
-                    Dalamud.Logging.PluginLog.Verbose($"old {person.Value.SourceName} {person.Value.Id}");
-                    ServiceManager.NaviMapManager.RemoveFromBag(person.Value.Id);
-                }
+        //        if (!existsAndCorrectPerson)
+        //        {
+        //            Dalamud.Logging.PluginLog.Verbose($"Removing person {person.Value.Name}");
+        //            Dalamud.Logging.PluginLog.Verbose($"old {person.Value.SourceName} {person.Value.Id}");
+        //            ServiceManager.NaviMapManager.RemoveFromBag(person.Value.Id);
+        //        }
 
 
-            });
-        }
+        //    });
+        //}
 
         private static unsafe void LookFor(int i)
         {
@@ -150,14 +153,20 @@ namespace MiniMappingway.Service
 
             if (obj == null) { return; }
 
-            if (ServiceManager.NaviMapManager.PersonDict
-                .Any(x => x.Value.Id == obj.ObjectId && x.Value.SourceName == FriendKey))
+            ServiceManager.NaviMapManager.PersonDict.TryGetValue(FriendKey, out var friendDict);
+            ServiceManager.NaviMapManager.PersonDict.TryGetValue(FcMembersKey, out var fcDict);
+
+            if (friendDict == null || fcDict == null)
+            {
+                return;
+            }
+
+            if (friendDict.Any(x => x.Value.Id == obj.ObjectId))
             {
                 alreadyInFriendBag = true;
             }
 
-            if (ServiceManager.NaviMapManager.PersonDict
-                .Any(x => x.Value.Id == obj.ObjectId && x.Value.SourceName == FcMembersKey))
+            if (fcDict.Any(x => x.Value.Id == obj.ObjectId))
             {
                 alreadyInFcBag = true;
             }
