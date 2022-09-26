@@ -1,5 +1,7 @@
 ﻿using System.Linq;
 using System.Numerics;
+using Dalamud.Game.ClientState.Objects.Enums;
+using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using ImGuiNET;
 using MiniMappingway.Manager;
 using MiniMappingway.Utility;
@@ -8,9 +10,6 @@ namespace MiniMappingway.Window
 {
     internal class NaviMapWindow : Dalamud.Interface.Windowing.Window
     {
-        
-
-
         public NaviMapWindow() : base("NaviMapWindow")
         {
             Size = new Vector2(200, 200);
@@ -89,6 +88,16 @@ namespace MiniMappingway.Window
             {
                 return false;
             }
+            if (ServiceManager.NaviMapManager.InCombat)
+            {
+                return false;
+            }
+
+            if (ServiceManager.ClientState.IsPvPExcludingDen)
+            {
+                return false;
+            }
+
             return true;
         }
 

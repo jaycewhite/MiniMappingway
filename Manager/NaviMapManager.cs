@@ -48,6 +48,8 @@ namespace MiniMappingway.Manager
 
         public bool IsLocked;
 
+        public bool InCombat { get; set; }
+
         public AtkUnitBase* NaviMapPointer => (AtkUnitBase*)ServiceManager.GameGui.GetAddonByName("_NaviMap", 1);
 
         public ExcelSheet<Map>? Maps;

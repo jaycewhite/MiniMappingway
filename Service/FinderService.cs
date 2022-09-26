@@ -115,7 +115,9 @@ namespace MiniMappingway.Service
                     return;
                 }
 
-                if (((StatusFlags)player->StatusFlags).HasFlag(StatusFlags.InCombat))
+                ServiceManager.NaviMapManager.InCombat =
+                    ((StatusFlags)player->StatusFlags).HasFlag(StatusFlags.InCombat);
+                if (ServiceManager.NaviMapManager.InCombat)
                 {
                     return;
                 }

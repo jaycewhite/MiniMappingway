@@ -137,7 +137,6 @@ namespace MiniMappingway.Utility
         public static bool RunChecks()
         {
             if (!ServiceManager.ClientState.IsLoggedIn
-                || !ServiceManager.NaviMapManager.Visible
                 || !ServiceManager.Configuration.Enabled)
             {
                 return false;
@@ -145,6 +144,11 @@ namespace MiniMappingway.Utility
             if (!ServiceManager.NaviMapManager.UpdateNaviMap())
             {
                 ChecksPassed = false;
+                return false;
+            }
+
+            if (!ServiceManager.NaviMapManager.Visible)
+            {
                 return false;
             }
             if (ServiceManager.NaviMapManager.CheckIfLoading())
