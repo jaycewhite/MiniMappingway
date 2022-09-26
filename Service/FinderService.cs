@@ -144,12 +144,12 @@ namespace MiniMappingway.Service
                 return;
             }
 
-            if (friendDict.Any(x => x.Value.Id == obj.ObjectId))
+            if (friendDict.Any(x => x.Value.Id == obj.ObjectId) && friendConfig.Enabled)
             {
                 alreadyInFriendBag = true;
             }
 
-            if (fcDict.Any(x => x.Value.Id == obj.ObjectId))
+            if (fcDict.Any(x => x.Value.Id == obj.ObjectId) && fcConfig.Enabled)
             {
                 alreadyInFcBag = true;
             }
