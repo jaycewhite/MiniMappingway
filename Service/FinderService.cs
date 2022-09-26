@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
+using System.Numerics;
 using Dalamud.Game;
 using Dalamud.Game.ClientState.Objects.Enums;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
@@ -13,8 +13,9 @@ namespace MiniMappingway.Service
 {
     public sealed class FinderService : IDisposable
     {
-        public const string FcMembersKey = "fcmembers";
-        public const string FriendKey = "friends";
+        public const string FcMembersKey = "FC Members";
+        public const string FriendKey = "Friends";
+        public const string EveryoneKey = "Everyone";
         private readonly IEnumerable<int> _enumerable;
         private IEnumerator<int> _enumerator;
         private int _index;
@@ -23,14 +24,18 @@ namespace MiniMappingway.Service
 
         public FinderService()
         {
-            ServiceManager.NaviMapManager.AddOrUpdateSource(FcMembersKey, ServiceManager.Configuration.FcColour);
-            ServiceManager.NaviMapManager.AddOrUpdateSource(FriendKey, ServiceManager.Configuration.FriendColour);
+            ServiceManager.NaviMapManager.AddOrUpdateSource(FriendKey, new Vector4(0.957f,0.533f,0.051f,1));
+            ServiceManager.NaviMapManager.AddOrUpdateSource(FcMembersKey, new Vector4(1, 0, 0, 1));
+            ServiceManager.NaviMapManager.AddOrUpdateSource(EveryoneKey, new Vector4(0, 0.7f, 0.7f, 1));
             ServiceManager.Framework.Update += Iterate;
-            //ServiceManager.Framework.Update += CheckStillInObjectTable;
 
 
             _enumerable = Enumerable.Range(2, 200).Where(x => x % 2 == 0);
             _enumerator = _enumerable.GetEnumerator();
+            _enumerator.MoveNext();
+            _index = _enumerator.Current;
+
+
 
 
         }
@@ -40,6 +45,7 @@ namespace MiniMappingway.Service
 
             CheckNewPeople(_index);
             CheckSamePerson(_index);
+
             var iteratorValid = _enumerator.MoveNext();
             if (!iteratorValid)
             {
@@ -50,10 +56,14 @@ namespace MiniMappingway.Service
             _index = _enumerator.Current;
         }
 
-        private static void CheckSamePerson(int i)
+        private static void CheckSamePerson(in int i)
         {
             foreach (var dict in ServiceManager.NaviMapManager.PersonDict)
             {
+                if (!ServiceManager.NaviMapManager.SourceDataDict[dict.Key].Enabled)
+                {
+                    continue;
+                }
                 dict.Value.TryGetValue(i, out var person);
                 if (person == null)
                 {
@@ -70,8 +80,7 @@ namespace MiniMappingway.Service
                 }
             }
         }
-
-        private static void CheckNewPeople(int i)
+        private static void CheckNewPeople(in int i)
         {
             if (MarkerUtility.ChecksPassed)
             {
@@ -79,44 +88,16 @@ namespace MiniMappingway.Service
             }
         }
 
-        //private static void CheckStillInObjectTable(Framework framework)
-        //{
-        //    if (!MarkerUtility.ChecksPassed)
-        //    {
-        //        return;
-        //    }
-
-        //    Parallel.ForEach(ServiceManager.NaviMapManager.PersonDict, person =>
-        //    {
-        //        var existsAndCorrectPerson = false;
-        //        foreach (var x in Enumerable.Range(2, 200).Where(x => x % 2 == 0))
-        //        {
-        //            if (ServiceManager.ObjectTable[x]?.ObjectKind != ObjectKind.Player)
-        //            {
-        //                continue;
-        //            }
-
-        //            if (person.Value.Id == ServiceManager.ObjectTable[x]?.ObjectId &&
-        //                ServiceManager.ObjectTable[x]?.Name.ToString() == person.Value.Name)
-        //            {
-        //                existsAndCorrectPerson = true;
-        //            }
-        //        }
-
-        //        if (!existsAndCorrectPerson)
-        //        {
-        //            Dalamud.Logging.PluginLog.Verbose($"Removing person {person.Value.Name}");
-        //            Dalamud.Logging.PluginLog.Verbose($"old {person.Value.SourceName} {person.Value.Id}");
-        //            ServiceManager.NaviMapManager.RemoveFromBag(person.Value.Id);
-        //        }
-
-
-        //    });
-        //}
-
         private static unsafe void LookFor(int i)
         {
-            if (!ServiceManager.Configuration.ShowFcMembers && !ServiceManager.Configuration.ShowFriends)
+            ServiceManager.Configuration.SourceConfigs.TryGetValue(FriendKey, out var friendConfig);
+            ServiceManager.Configuration.SourceConfigs.TryGetValue(FcMembersKey, out var fcConfig);
+            ServiceManager.Configuration.SourceConfigs.TryGetValue(EveryoneKey, out var everyoneConfig);
+            if (fcConfig == null || friendConfig == null || everyoneConfig == null)
+            {
+                return;
+            }
+            if (!fcConfig.Enabled && !friendConfig.Enabled && !everyoneConfig.Enabled)
             {
                 return;
             }
@@ -188,20 +169,19 @@ namespace MiniMappingway.Service
                 return;
             }
 
-            //IsCasting currently means friend
-            if (ServiceManager.Configuration.ShowFriends && !alreadyInFriendBag)
+            if (friendConfig.Enabled && !alreadyInFriendBag)
             {
+                //IsCasting currently means friend
                 if (((StatusFlags)charPointer->StatusFlags).HasFlag(StatusFlags.IsCasting))
                 {
                     var personDetails = new PersonDetails(obj.Name.ToString(), obj.ObjectId, FriendKey, obj.Address);
-                    Dalamud.Logging.PluginLog.Verbose("adding person friend");
-
+                    alreadyInFriendBag = true;
                     ServiceManager.NaviMapManager.AddToBag(personDetails);
 
                 }
             }
 
-            if (ServiceManager.Configuration.ShowFcMembers && !alreadyInFcBag)
+            if (fcConfig.Enabled && !alreadyInFcBag)
             {
                 if (fc == null)
                 {
@@ -215,14 +195,23 @@ namespace MiniMappingway.Service
                 }
                 if (playerFc.SequenceEqual(tempFc))
                 {
-                    Dalamud.Logging.PluginLog.Verbose("adding person fc");
 
                     var personDetails = new PersonDetails(obj.Name.ToString(), obj.ObjectId, FcMembersKey, obj.Address);
-
+                    alreadyInFcBag = true;
                     ServiceManager.NaviMapManager.AddToBag(personDetails);
+                    
+
+
                 }
             }
 
+            if (!alreadyInFcBag && !alreadyInFriendBag && everyoneConfig.Enabled)
+            {
+                var personDetails = new PersonDetails(obj.Name.ToString(), obj.ObjectId, EveryoneKey, obj.Address);
+
+                ServiceManager.NaviMapManager.AddToBag(personDetails);
+
+            }
 
 
         }

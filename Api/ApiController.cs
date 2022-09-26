@@ -66,8 +66,8 @@ namespace MiniMappingway.Api
         /// <summary>
         /// Register as a source, or update source data (currently just marker color)
         /// </summary>
-        /// <param name="sourceName">Source name string, should be unique to your plugin</param>
-        /// <param name="color">Color for markers in vector4 format</param>
+        /// <param name="sourceName">Source name string, should be unique to your plugin and human readable, will show in settings pane</param>
+        /// <param name="color">Color for markers in vector4 format - this can be overwritten by the user in settings</param>
         /// <returns>Success boolean</returns>
         private bool RegisterOrUpdateSource(string sourceName, Vector4 color)
         {
@@ -78,7 +78,7 @@ namespace MiniMappingway.Api
         /// Register as a source, or update source data (currently just marker color)
         /// </summary>
         /// <param name="sourceName">Source name string, should be unique to your plugin</param>
-        /// <param name="color">Color for markers in uint format</param>
+        /// <param name="color">Color for markers in uint format - this can be overwritten by the user in settings</param>
         /// <returns>Success boolean</returns>
         private bool RegisterOrUpdateSource(string sourceName, uint color)
         {

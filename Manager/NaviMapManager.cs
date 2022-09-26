@@ -1,16 +1,15 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using System.Numerics;
-using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
 using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
 using MiniMappingway.Model;
+using MiniMappingway.Service;
 using MiniMappingway.Utility;
 
 namespace MiniMappingway.Manager
@@ -20,7 +19,7 @@ namespace MiniMappingway.Manager
 
         public ConcurrentDictionary<string, ConcurrentDictionary<int, PersonDetails>> PersonDict = new();
 
-        public ConcurrentDictionary<string, uint> SourceDataDict = new();
+        public ConcurrentDictionary<string, SourceData> SourceDataDict = new();
 
         public int X;
 
@@ -59,7 +58,7 @@ namespace MiniMappingway.Manager
         [Signature("44 0F 44 3D ?? ?? ?? ??", ScanType = ScanType.StaticAddress)]
         public readonly uint* MapSig2 = null!;
 
-        public Queue<CircleData> CircleData = new();
+        public ConcurrentDictionary<int,Queue<CircleData>> CircleData = new();
 
         public NaviMapManager()
         {
@@ -72,18 +71,61 @@ namespace MiniMappingway.Manager
 
         public bool AddOrUpdateSource(string sourceName, uint colour)
         {
-            SourceDataDict.AddOrUpdate(sourceName, colour, (_, _) => colour);
+            if (ServiceManager.Configuration.SourceConfigs.TryGetValue(sourceName, out var source))
+            {
+                SourceDataDict.AddOrUpdate(sourceName, source, (_, _) => source);
+                PersonDict.AddOrUpdate(sourceName, new ConcurrentDictionary<int, PersonDetails>(),
+                    (_, _) => new ConcurrentDictionary<int, PersonDetails>());
+            }
+            else
+            {
+                var sourceData = new SourceData(colour);
+
+                SourceDataDict.AddOrUpdate(sourceName, sourceData, (_, _) => sourceData);
+                PersonDict.AddOrUpdate(sourceName, new ConcurrentDictionary<int, PersonDetails>(),
+                    (_, _) => new ConcurrentDictionary<int, PersonDetails>());
+
+            }
 
             return true;
         }
 
         public bool AddOrUpdateSource(string sourceName, Vector4 colour)
         {
-            var uintColor = ImGui.ColorConvertFloat4ToU32(colour);
-            SourceDataDict.AddOrUpdate(sourceName, uintColor, (_, _) => uintColor);
-            PersonDict.AddOrUpdate(sourceName, new ConcurrentDictionary<int, PersonDetails>(),
-                (_, _) => new ConcurrentDictionary<int, PersonDetails>());
+            if (ServiceManager.Configuration.SourceConfigs.TryGetValue(sourceName, out var source))
+            {
+                SourceDataDict.AddOrUpdate(sourceName, source, (_, _) => source);
+                PersonDict.AddOrUpdate(sourceName, new ConcurrentDictionary<int, PersonDetails>(),
+                    (_, _) => new ConcurrentDictionary<int, PersonDetails>());
 
+            }
+            else
+            {
+                var uintColor = ImGui.ColorConvertFloat4ToU32(colour);
+                var sourceData = new SourceData(uintColor);
+                if (sourceName == FinderService.EveryoneKey)
+                {
+                    sourceData.Priority = 0;
+                    sourceData.Enabled = false;
+                }
+                if (sourceName == FinderService.FcMembersKey)
+                {
+                    sourceData.Priority = 1;
+                }
+                if (sourceName == FinderService.FriendKey)
+                {
+                    sourceData.Priority = 2;
+                }
+                else
+                {
+                    sourceData.Priority = GetNextFreePriority();
+                }
+
+                ServiceManager.Configuration.SourceConfigs.TryAdd(sourceName, sourceData);
+                SourceDataDict.AddOrUpdate(sourceName, sourceData, (_, _) => sourceData);
+                PersonDict.AddOrUpdate(sourceName, new ConcurrentDictionary<int, PersonDetails>(),
+                    (_, _) => new ConcurrentDictionary<int, PersonDetails>());
+            }
             return true;
         }
 
@@ -134,8 +176,6 @@ namespace MiniMappingway.Manager
         {
             if (Maps != null)
             {
-                PluginLog.Verbose("Updating Map");
-
                 var map = Maps.GetRow(GetMapId());
 
                 if (map == null) { return; }
@@ -251,6 +291,19 @@ namespace MiniMappingway.Manager
         {
             PersonDict.Clear();
             SourceDataDict.Clear();
+        }
+
+        public int GetNextFreePriority()
+        {
+            for(int i = 0; i < 99; i++)
+            {
+                if (SourceDataDict.Values.All(x => x.Priority != i))
+                {
+                    return i;
+                }
+            }
+
+            return 1;
         }
     }
 }

@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Linq;
 using System.Numerics;
 using ImGuiNET;
 using MiniMappingway.Manager;
+using MiniMappingway.Model;
 using MiniMappingway.Service;
 
 namespace MiniMappingway
@@ -29,7 +31,6 @@ namespace MiniMappingway
         {
         }
 
-
         public void DrawSettingsWindow()
         {
             if (!SettingsVisible)
@@ -37,8 +38,8 @@ namespace MiniMappingway
                 return;
             }
 
-            ImGui.SetNextWindowSize(new Vector2(350, 310), ImGuiCond.Appearing);
-            if (ImGui.Begin("Mini-Mappingway Settings", ref _settingsVisible, ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
+            ImGui.SetNextWindowSize(new Vector2(450, 405), ImGuiCond.Appearing);
+            if (ImGui.Begin("Mini-Mappingway Settings", ref _settingsVisible, ImGuiWindowFlags.NoCollapse))
             {
                 // can't ref a property, so use a local copy
                 var enabled = ServiceManager.Configuration.Enabled;
@@ -48,65 +49,134 @@ namespace MiniMappingway
                     ServiceManager.Configuration.Save();
                 }
 
-                var showFriends = ServiceManager.Configuration.ShowFriends;
-                if (ImGui.Checkbox("Show friends on minimap", ref showFriends))
-                {
-                    ServiceManager.Configuration.ShowFriends = showFriends;
-                    ServiceManager.Configuration.Save();
-                }
 
-                if (!ServiceManager.Configuration.ShowFriends)
-                {
-                    ServiceManager.NaviMapManager.ClearPersonBag(FinderService.FriendKey);
-                }
-
-                var showFcMembers = ServiceManager.Configuration.ShowFcMembers;
-                if (ImGui.Checkbox("Show FC Members on minimap", ref showFcMembers))
-                {
-                    ServiceManager.Configuration.ShowFcMembers = showFcMembers;
-                    ServiceManager.Configuration.Save();
-                }
-                if (ServiceManager.Configuration.ShowFcMembers)
-                {
-                    ImGui.TextColored(new Vector4(255,0,0,255),"For now this is done by comparing FC tags.");
+                
+                    ImGui.TextColored(new Vector4(255, 0, 0, 255), "For now FC members are found by comparing FC tags.");
                     ImGui.TextColored(new Vector4(255, 0, 0, 255), "If you have a common FC tag you may wish to disable this.");
 
-                }
-                else
+                
+                ImGui.Text("Marker settings, ordered by priority:");
+
+                foreach (var source in ServiceManager.NaviMapManager.SourceDataDict.OrderBy(x => x.Value.Priority))
                 {
-                    ServiceManager.NaviMapManager.ClearPersonBag(FinderService.FcMembersKey);
-                }
-                ImGui.NewLine();
+                    ImGui.PushID(source.Key);
+                    var sourceDataLocal = new SourceData(source.Value);
+                    if (ImGui.BeginListBox($"##list{source.Key}", new Vector2(-1, 210)))
+                    {
+                        ImGui.Text(source.Key);
 
-                var friendColour = ServiceManager.Configuration.FriendColour;
-                ImGui.Text("Friend Colour. Click the coloured square for a picker.");
-                if (ImGui.ColorEdit4("Friend", ref friendColour, ImGuiColorEditFlags.NoAlpha))
-                {
-                    ServiceManager.Configuration.FriendColour = friendColour;
-                    ServiceManager.Configuration.Save();
+                        var enabledLocal = sourceDataLocal.Enabled;
+                        if (ImGui.Checkbox("Enabled", ref enabledLocal))
+                        {
+                            sourceDataLocal.Enabled = enabledLocal;
+                        }
 
-                }
+                        ImGui.SameLine(90);
+                        
+                        int tempPriority = sourceDataLocal.Priority;
+                        bool isPriorityError = false;
 
-                var fcColour = ServiceManager.Configuration.FcColour;
-                ImGui.Text("FC Colour. Click the coloured square for a picker.");
-                if (ImGui.ColorEdit4("FC", ref fcColour, ImGuiColorEditFlags.NoAlpha))
-                {
-                    ServiceManager.Configuration.FcColour = fcColour;
-                    ServiceManager.Configuration.Save();
+                        if (source.Key == FinderService.EveryoneKey)
+                        {
+                            ImGui.Text("\"Everyone\" is always the lowest priority");
+
+                        }
+                        else
+                        {
+                            
+                            ImGui.PushItemWidth(100);
+
+                            if (ImGui.InputInt("##priority", ref tempPriority, 1))
+                            {
+                                if (tempPriority < 1)
+                                {
+                                    tempPriority = 1;
+                                }
+
+                                if (tempPriority > 99)
+                                {
+                                    tempPriority = 99;
+                                }
+                                
+                                sourceDataLocal.Priority = tempPriority;
+                            }
+                            isPriorityError = ServiceManager.NaviMapManager.SourceDataDict.Any(x => x.Value.Priority == tempPriority && x.Key != source.Key);
+
+                            ImGui.PopItemWidth();
+                            ImGui.SameLine();
+                            if (isPriorityError)
+                            {
+                                ImGui.TextColored(new Vector4(1, 0, 0, 1), $"Priority {tempPriority} is already taken");
+                            }
+                            else
+                            {
+                                ImGui.Text("Priority, higher shows on top of lower");
+                            }
+
+                        }
+
+                        Vector4 color = ImGui.ColorConvertU32ToFloat4(source.Value.Color);
+                        ImGui.Text("Marker Colour. Click the coloured square for a picker.");
+                        if (ImGui.ColorEdit4("##color", ref color, ImGuiColorEditFlags.NoAlpha))
+                        {
+
+                            var uintColour = ImGui.ColorConvertFloat4ToU32(color);
+                            sourceDataLocal.Color = uintColour;
+                            sourceDataLocal.BorderValid = false;
 
 
-                }
 
-                var circleSize = ServiceManager.Configuration.CircleSize;
-                if (ImGui.SliderInt("Circle Size", ref circleSize, 1, 20))
-                {
-                    ServiceManager.Configuration.CircleSize = circleSize;
-                    ServiceManager.Configuration.Save();
+
+                        }
+                        int circleSizeLocal = source.Value.CircleSize;
+                        if (ImGui.SliderInt("Circle Size", ref circleSizeLocal, 1, 20))
+                        {
+                            sourceDataLocal.CircleSize = circleSizeLocal;
+                        }
+
+                        bool border = sourceDataLocal.ShowBorder;
+                        if (ImGui.Checkbox("Show Border", ref border))
+                        {
+                            sourceDataLocal.ShowBorder = border;
+                        }
+
+                        float darkeningAmount = sourceDataLocal.BorderDarkeningAmount;
+                        if (ImGui.SliderFloat("Border Brightness", ref darkeningAmount, 0.0f, 2f))
+                        {
+                            sourceDataLocal.BorderDarkeningAmount = darkeningAmount;
+                            sourceDataLocal.BorderValid = false;
+                        }
+
+                        int borderRadius = sourceDataLocal.BorderRadius;
+                        if (ImGui.SliderInt("Border Radius", ref borderRadius, 1, 10))
+                        {
+                            sourceDataLocal.BorderRadius = borderRadius;
+                        }
+
+                        ServiceManager.NaviMapManager.SourceDataDict.AddOrUpdate(source.Key, sourceDataLocal, (_, _) => sourceDataLocal);
+                        if (sourceDataLocal != ServiceManager.Configuration.SourceConfigs[source.Key])
+                        {
+                            if (!isPriorityError)
+                            {
+                                ServiceManager.Configuration.SourceConfigs[source.Key] = sourceDataLocal;
+
+                            }
+                            ServiceManager.Configuration.Save();
+                        }
+                        ImGui.EndListBox();
+
+                    }
+
+                    ImGui.PopID();
+
                 }
 
             }
             ImGui.End();
+
+
         }
+        
 
     }
 }

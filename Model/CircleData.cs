@@ -12,5 +12,6 @@ namespace MiniMappingway.Model
             Position = position;
             SourceName = sourceName;
         }
+        
     }
 }

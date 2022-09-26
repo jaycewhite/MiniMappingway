@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using System.Numerics;
-using Dalamud.Game.ClientState.Objects.Enums;
-using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using ImGuiNET;
 using MiniMappingway.Manager;
-using MiniMappingway.Model;
 using MiniMappingway.Utility;
 
 namespace MiniMappingway.Window
@@ -42,26 +37,48 @@ namespace MiniMappingway.Window
                 ImGui.Text($"x {ServiceManager.NaviMapManager.X}");
                 ImGui.Text($"y {ServiceManager.NaviMapManager.Y}");
                 ImGui.Text($"islocked {ServiceManager.NaviMapManager.IsLocked}");
-                ImGui.Text($"showfc {ServiceManager.Configuration.ShowFcMembers}");
-                ImGui.Text($"showfriend {ServiceManager.Configuration.ShowFriends}");
-                ImGui.Text($"circleCount {ServiceManager.NaviMapManager.CircleData.Count}");
+                ImGui.Text($"se {ServiceManager.Configuration.SourceConfigs.Count}");
+                ImGui.Text($"circles {ServiceManager.NaviMapManager.CircleData.Values.SelectMany(x => x).Count()}");
+
+
                 int count = 0;
                 foreach (var dict in ServiceManager.NaviMapManager.PersonDict)
                 {
                     count += dict.Value.Count;
-                }
 
+                }
                 ImGui.Text($"people {count}");
             }
 
-            while (ServiceManager.NaviMapManager.CircleData.Any())
+            //foreach (var keyValuePair in ServiceManager.NaviMapManager.CircleData.Where(x => x.Value.Any()))
+            foreach (var i in ServiceManager.NaviMapManager.CircleData.Where(x => x.Value.Any()).OrderBy(x => x.Key))
             {
-                ServiceManager.NaviMapManager.CircleData.TryDequeue(out var circle);
-                if (circle == null)
+                ServiceManager.NaviMapManager.CircleData.TryGetValue(i.Key, out var keyValuePair);
+                if (keyValuePair == null)
                 {
                     continue;
                 }
-                drawList.AddCircleFilled(circle.Position, ServiceManager.Configuration.CircleSize, ServiceManager.NaviMapManager.SourceDataDict[circle.SourceName]);
+                while (keyValuePair.Any())
+                {
+                    keyValuePair.TryDequeue(out var circle);
+                    if (circle == null)
+                    {
+                        continue;
+                    }
+
+                    var circleConfig = ServiceManager.NaviMapManager.SourceDataDict[circle.SourceName];
+                    if (!circleConfig.Enabled)
+                    {
+                        continue;
+                    }
+                    drawList.AddCircleFilled(circle.Position, circleConfig.CircleSize, circleConfig.Color);
+                    if (circleConfig.ShowBorder)
+                    {
+                        drawList.AddCircle(circle.Position, circleConfig.CircleSize, circleConfig.AutoBorderColour, 0, circleConfig.BorderRadius);
+
+                    }
+                }
+                
             }
             
         }

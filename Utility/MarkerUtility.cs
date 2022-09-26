@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Game.ClientState.Objects.Enums;
-using Dalamud.Game.ClientState.Objects.Types;
 using ImGuiNET;
 using MiniMappingway.Manager;
 using MiniMappingway.Model;
@@ -13,43 +12,42 @@ namespace MiniMappingway.Utility
 {
     internal static class MarkerUtility
     {
-        private static readonly int _naviMapSize = 218;
+        private static readonly int NaviMapSize = 218;
 
-        public static Vector2 _mapSize;
-        public static Vector2 _mapPos;
-        public static Vector2 _windowPos;
-        public static Vector2 _playerPos = new(0, 0);
-        public static Vector2 _playerCirclePos;
+        public static Vector2 MapSize;
+        public static Vector2 MapPos;
+        public static Vector2 WindowPos;
+        public static Vector2 PlayerPos = new(0, 0);
+        public static Vector2 PlayerCirclePos;
 
         static float _minimapRadius;
 
 
         public static bool ChecksPassed;
+        
 
         private static unsafe CircleData? CalculateCirclePosition(this KeyValuePair<int, PersonDetails> person)
         {
-            var personObj = ServiceManager.ObjectTable.CreateObjectReference(person.Value.ptr);
+            var personObj = ServiceManager.ObjectTable.CreateObjectReference(person.Value.Ptr);
 
             if (personObj == null || !personObj.IsValid() || ServiceManager.ObjectTable[person.Key] == null)
             {
                 ServiceManager.NaviMapManager.RemoveFromBag(person.Value.Id, person.Value.SourceName);
                 return null;
             }
-            unsafe
-            {
-                var isPartyMember = ((StatusFlags)((Character*)personObj.Address)->StatusFlags).HasFlag(StatusFlags.AllianceMember);
 
-                if (isPartyMember)
-                {
-                    return null;
-                }
+            var isPartyMember = ((StatusFlags)((Character*)personObj.Address)->StatusFlags).HasFlag(StatusFlags.AllianceMember);
+
+            if (isPartyMember)
+            {
+                return null;
             }
 
             //Calculate the relative position in world coords
             var relativePersonPos = new Vector2(0, 0);
 
-            relativePersonPos.X = _playerPos.X - personObj.Position.X;
-            relativePersonPos.Y = _playerPos.Y - personObj.Position.Z;
+            relativePersonPos.X = PlayerPos.X - personObj.Position.X;
+            relativePersonPos.Y = PlayerPos.Y - personObj.Position.Z;
 
             //Account for various scales that can affect the minimap
             relativePersonPos *= ServiceManager.NaviMapManager.ZoneScale;
@@ -58,24 +56,24 @@ namespace MiniMappingway.Utility
 
 
             //The Circle position for the "person" should be the players circle position minus the relativePosition of the person
-            var personCirclePos = _playerCirclePos - relativePersonPos;
+            var personCirclePos = PlayerCirclePos - relativePersonPos;
 
 
 
             //if the minimap is unlocked, rotate circles around the player (the center of the minimap)
             if (!ServiceManager.NaviMapManager.IsLocked)
             {
-                personCirclePos = RotateForMiniMap(_playerCirclePos, personCirclePos, (int)ServiceManager.NaviMapManager.Rotation);
+                personCirclePos = RotateForMiniMap(PlayerCirclePos, personCirclePos, (int)ServiceManager.NaviMapManager.Rotation);
             }
 
 
             //If the circle would leave the minimap, clamp it to the minimap radius
-            var distance = Vector2.Distance(_playerCirclePos, personCirclePos);
+            var distance = Vector2.Distance(PlayerCirclePos, personCirclePos);
             if (distance > _minimapRadius)
             {
-                var originToObject = personCirclePos - _playerCirclePos;
+                var originToObject = personCirclePos - PlayerCirclePos;
                 originToObject *= _minimapRadius / distance;
-                personCirclePos = _playerCirclePos + originToObject;
+                personCirclePos = PlayerCirclePos + originToObject;
             }
 
             return new CircleData(personCirclePos, person.Value.SourceName);
@@ -101,28 +99,34 @@ namespace MiniMappingway.Utility
 
         public static void PrepareDrawOnMinimap()
         {
-
             //Get ffxiv window position on screen
-            _windowPos = ImGui.GetWindowViewport().Pos;
+            WindowPos = ImGui.GetWindowViewport().Pos;
 
             //Player Circle position will always be center of the minimap, this is also our pivot point
-            _playerCirclePos = new Vector2(ServiceManager.NaviMapManager.X + (_mapSize.X / 2), ServiceManager.NaviMapManager.Y + (_mapSize.Y / 2)) + _windowPos;
+            PlayerCirclePos = new Vector2(ServiceManager.NaviMapManager.X + (MapSize.X / 2), ServiceManager.NaviMapManager.Y + (MapSize.Y / 2)) + WindowPos;
 
             //to line up with minimap pivot better
-            _playerCirclePos.Y -= 5f;
+            PlayerCirclePos.Y -= 5f;
 
             foreach (var dict in ServiceManager.NaviMapManager.PersonDict)
             {
+                var priority = ServiceManager.NaviMapManager.SourceDataDict[dict.Key].Priority;
+
+
+                if (!ServiceManager.NaviMapManager.CircleData.ContainsKey(priority))
+                {
+                    ServiceManager.NaviMapManager.CircleData[priority] = new();
+                }
                 foreach (var person in dict.Value)
                 {
                     var marker = person.CalculateCirclePosition();
                     if (marker != null)
                     {
-                        ServiceManager.NaviMapManager.CircleData.Enqueue(marker);
+                        ServiceManager.NaviMapManager.CircleData[priority].Enqueue(marker);
                     }
                 }
 
-                
+
             }
 
             ////for debugging center point
@@ -150,11 +154,11 @@ namespace MiniMappingway.Utility
 
 
 
-            _mapSize = new Vector2(_naviMapSize * ServiceManager.NaviMapManager.NaviScale, _naviMapSize * ServiceManager.NaviMapManager.NaviScale);
-            _minimapRadius = _mapSize.X * 0.315f;
-            _mapPos = new Vector2(ServiceManager.NaviMapManager.X, ServiceManager.NaviMapManager.Y);
-            ServiceManager.WindowManager.NaviMapWindow.Size = _mapSize;
-            ServiceManager.WindowManager.NaviMapWindow.Position = _mapPos;
+            MapSize = new Vector2(NaviMapSize * ServiceManager.NaviMapManager.NaviScale, NaviMapSize * ServiceManager.NaviMapManager.NaviScale);
+            _minimapRadius = MapSize.X * 0.315f;
+            MapPos = new Vector2(ServiceManager.NaviMapManager.X, ServiceManager.NaviMapManager.Y);
+            ServiceManager.WindowManager.NaviMapWindow.Size = MapSize;
+            ServiceManager.WindowManager.NaviMapWindow.Position = MapPos;
 
             unsafe
             {
@@ -164,7 +168,7 @@ namespace MiniMappingway.Utility
                     return false;
                 }
 
-                _playerPos = new Vector2(player->GameObject.Position.X, player->GameObject.Position.Z);
+                PlayerPos = new Vector2(player->GameObject.Position.X, player->GameObject.Position.Z);
             }
             ChecksPassed = true;
             return true;
