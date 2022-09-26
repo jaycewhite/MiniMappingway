@@ -5,7 +5,7 @@ namespace MiniMappingway.Model
     public class CircleData
     {
         public Vector2 Position;
-        public string SourceName;
+        public readonly string SourceName;
 
         public CircleData(Vector2 position, string sourceName)
         {

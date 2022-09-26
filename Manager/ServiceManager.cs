@@ -16,14 +16,13 @@ namespace MiniMappingway.Manager
     {
         //Dalamud services
         [PluginService] public static ClientState ClientState { get; private set; } = null!;
-        [PluginService] public static GameGui GameGui { get; set; } = null!;
-        [PluginService] public static ObjectTable ObjectTable { get; set; } = null!;
-        [PluginService] public static DataManager DataManager { get; set; } = null!;
-        [PluginService] public static SigScanner SigScanner { get; set; } = null!;
-        [PluginService] public static DalamudPluginInterface DalamudPluginInterface { get; set; } = null!;
-        [PluginService] public static CommandManager CommandManager { get; set; } = null!;
-        [PluginService] public static Framework Framework { get; set; } = null!;
-        public static WindowSystem WindowSystem { get; set; } = new("MiniMappingway");
+        [PluginService] public static GameGui GameGui { get; private set; } = null!;
+        [PluginService] public static ObjectTable ObjectTable { get; private set; } = null!;
+        [PluginService] public static DataManager DataManager { get; private set; } = null!;
+        [PluginService] public static DalamudPluginInterface DalamudPluginInterface { get; private set; } = null!;
+        [PluginService] public static CommandManager CommandManager { get; private set; } = null!;
+        [PluginService] public static Framework Framework { get; private set; } = null!;
+        public static WindowSystem WindowSystem { get; private set; } = new("MiniMappingway");
 
 
         //Custom services

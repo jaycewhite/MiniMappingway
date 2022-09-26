@@ -13,18 +13,11 @@ namespace MiniMappingway
     public class PluginUi : IDisposable
     {
         // this extra bool exists for ImGui, since you can't ref a property
-        private bool _visible;
-        public bool Visible
-        {
-            get { return _visible; }
-            set { _visible = value; }
-        }
-
         private bool _settingsVisible;
         public bool SettingsVisible
         {
-            get { return _settingsVisible; }
-            set { _settingsVisible = value; }
+            get => _settingsVisible;
+            set => _settingsVisible = value;
         }
 
         public void Dispose()
@@ -49,12 +42,9 @@ namespace MiniMappingway
                     ServiceManager.Configuration.Save();
                 }
 
+                ImGui.TextColored(new Vector4(255, 0, 0, 255), "For now FC members are found by comparing FC tags.");
+                ImGui.TextColored(new Vector4(255, 0, 0, 255), "If you have a common FC tag you may wish to disable this.");
 
-                
-                    ImGui.TextColored(new Vector4(255, 0, 0, 255), "For now FC members are found by comparing FC tags.");
-                    ImGui.TextColored(new Vector4(255, 0, 0, 255), "If you have a common FC tag you may wish to disable this.");
-
-                
                 ImGui.Text("Marker settings, ordered by priority:");
 
                 foreach (var source in ServiceManager.NaviMapManager.SourceDataDict.OrderBy(x => x.Value.Priority))
@@ -73,8 +63,8 @@ namespace MiniMappingway
 
                         ImGui.SameLine(90);
                         
-                        int tempPriority = sourceDataLocal.Priority;
-                        bool isPriorityError = false;
+                        var tempPriority = sourceDataLocal.Priority;
+                        var isPriorityError = false;
 
                         if (source.Key == FinderService.EveryoneKey)
                         {
@@ -115,8 +105,8 @@ namespace MiniMappingway
 
                         }
 
-                        Vector4 color = ImGui.ColorConvertU32ToFloat4(source.Value.Color);
-                        ImGui.Text("Marker Colour. Click the coloured square for a picker.");
+                        var color = ImGui.ColorConvertU32ToFloat4(source.Value.Color);
+                        ImGui.Text("Marker Colour. Click the colored square for a picker.");
                         if (ImGui.ColorEdit4("##color", ref color, ImGuiColorEditFlags.NoAlpha))
                         {
 
@@ -128,26 +118,26 @@ namespace MiniMappingway
 
 
                         }
-                        int circleSizeLocal = source.Value.CircleSize;
+                        var circleSizeLocal = source.Value.CircleSize;
                         if (ImGui.SliderInt("Circle Size", ref circleSizeLocal, 1, 20))
                         {
                             sourceDataLocal.CircleSize = circleSizeLocal;
                         }
 
-                        bool border = sourceDataLocal.ShowBorder;
+                        var border = sourceDataLocal.ShowBorder;
                         if (ImGui.Checkbox("Show Border", ref border))
                         {
                             sourceDataLocal.ShowBorder = border;
                         }
 
-                        float darkeningAmount = sourceDataLocal.BorderDarkeningAmount;
+                        var darkeningAmount = sourceDataLocal.BorderDarkeningAmount;
                         if (ImGui.SliderFloat("Border Brightness", ref darkeningAmount, 0.0f, 2f))
                         {
                             sourceDataLocal.BorderDarkeningAmount = darkeningAmount;
                             sourceDataLocal.BorderValid = false;
                         }
 
-                        int borderRadius = sourceDataLocal.BorderRadius;
+                        var borderRadius = sourceDataLocal.BorderRadius;
                         if (ImGui.SliderInt("Border Radius", ref borderRadius, 1, 10))
                         {
                             sourceDataLocal.BorderRadius = borderRadius;

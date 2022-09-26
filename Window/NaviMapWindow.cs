@@ -1,7 +1,5 @@
 ﻿using System.Linq;
 using System.Numerics;
-using Dalamud.Game.ClientState.Objects.Enums;
-using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using ImGuiNET;
 using MiniMappingway.Manager;
 using MiniMappingway.Utility;
@@ -40,7 +38,7 @@ namespace MiniMappingway.Window
                 ImGui.Text($"circles {ServiceManager.NaviMapManager.CircleData.Values.SelectMany(x => x).Count()}");
 
 
-                int count = 0;
+                var count = 0;
                 foreach (var dict in ServiceManager.NaviMapManager.PersonDict)
                 {
                     count += dict.Value.Count;
@@ -106,19 +104,5 @@ namespace MiniMappingway.Window
             MarkerUtility.PrepareDrawOnMinimap();
 
         }
-
-
-
-        public void Dispose()
-        {
-        }
-
-
-
-
-
-        
-
-        
     }
 }

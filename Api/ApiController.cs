@@ -26,21 +26,21 @@ namespace MiniMappingway.Api
         private const int ApiVersionMajor = 1;
         private const int ApiVersionMinor = 0;
 
-        ICallGateProvider<Tuple<int, int>> _getVersionIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<Tuple<int, int>>("MiniMappingway.CheckVersion");
+        private readonly ICallGateProvider<Tuple<int, int>> _getVersionIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<Tuple<int, int>>("MiniMappingway.CheckVersion");
 
-        ICallGateProvider<string, Vector4, bool> _registerOrUpdateSourceVecIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<string,Vector4,bool>("MiniMappingway.RegisterOrUpdateSourceVec");
+        private readonly ICallGateProvider<string, Vector4, bool> _registerOrUpdateSourceVecIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<string,Vector4,bool>("MiniMappingway.RegisterOrUpdateSourceVec");
 
-        ICallGateProvider<string, uint, bool> _registerOrUpdateSourceUintIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<string,uint,bool>("MiniMappingway.RegisterOrUpdateSourceUint");
+        private readonly ICallGateProvider<string, uint, bool> _registerOrUpdateSourceUintIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<string,uint,bool>("MiniMappingway.RegisterOrUpdateSourceUint");
 
-        ICallGateProvider<string, List<PersonDetails>, bool> _overwriteListIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<string, List<PersonDetails>, bool>("MiniMappingway.OverwriteList");
+        private readonly ICallGateProvider<string, List<PersonDetails>, bool> _overwriteListIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<string, List<PersonDetails>, bool>("MiniMappingway.OverwriteList");
 
-        ICallGateProvider<string, string, uint, bool> _addPersonIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<string, string, uint, bool>("MiniMappingway.AddPerson");
+        private readonly ICallGateProvider<string, string, uint, bool> _addPersonIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<string, string, uint, bool>("MiniMappingway.AddPerson");
 
-        ICallGateProvider<string, string, bool> _removePersonByNameIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<string, string, bool>("MiniMappingway.RemovePersonByName");
+        private readonly ICallGateProvider<string, string, bool> _removePersonByNameIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<string, string, bool>("MiniMappingway.RemovePersonByName");
 
-        ICallGateProvider<uint, string, bool> _removePersonByIdIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<uint, string, bool>("MiniMappingway.RemovePersonByUint");
+        private readonly ICallGateProvider<uint, string, bool> _removePersonByIdIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<uint, string, bool>("MiniMappingway.RemovePersonByUint");
 
-        ICallGateProvider<string, bool> _removeSourceAndPeopleIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<string, bool>("MiniMappingway.RemoveSourceAndPeople");
+        private readonly ICallGateProvider<string, bool> _removeSourceAndPeopleIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<string, bool>("MiniMappingway.RemoveSourceAndPeople");
 
         public ApiController()
         {

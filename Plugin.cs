@@ -5,7 +5,9 @@ using Dalamud.IoC;
 using Dalamud.Logging;
 using Dalamud.Plugin;
 using ImGuiNET;
+using MiniMappingway.Api;
 using MiniMappingway.Manager;
+using MiniMappingway.Service;
 
 namespace MiniMappingway
 {
@@ -29,16 +31,16 @@ namespace MiniMappingway
 
             #region Initialise Managers
 
-            ServiceManager.NaviMapManager = new();
-            ServiceManager.PluginUi = new();
-            ServiceManager.WindowManager = new();
-            ServiceManager.ApiController = new();
+            ServiceManager.NaviMapManager = new NaviMapManager();
+            ServiceManager.PluginUi = new PluginUi();
+            ServiceManager.WindowManager = new WindowManager();
+            ServiceManager.ApiController = new ApiController();
 
             #endregion
 
             #region Initialise Services
 
-            ServiceManager.FinderService = new();
+            ServiceManager.FinderService = new FinderService();
 
             #endregion
 

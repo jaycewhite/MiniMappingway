@@ -4,13 +4,13 @@ namespace MiniMappingway.Model
 {
     public class PersonDetails
     {
-        public string Name { get; set; }
+        public string Name { get; }
 
-        public uint Id { get; set; }
+        public uint Id { get; }
 
-        public string SourceName { get; set; }
+        public string SourceName { get; }
 
-        public IntPtr Ptr { get; set; }
+        public IntPtr Ptr { get; }
 
         //public bool HighestPriority { get; set; }
 

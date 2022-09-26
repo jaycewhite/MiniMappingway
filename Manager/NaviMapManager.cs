@@ -17,15 +17,13 @@ namespace MiniMappingway.Manager
     public unsafe class NaviMapManager : IDisposable
     {
 
-        public ConcurrentDictionary<string, ConcurrentDictionary<int, PersonDetails>> PersonDict = new();
+        public readonly ConcurrentDictionary<string, ConcurrentDictionary<int, PersonDetails>> PersonDict = new();
 
-        public ConcurrentDictionary<string, SourceData> SourceDataDict = new();
+        public readonly ConcurrentDictionary<string, SourceData> SourceDataDict = new();
 
         public int X;
 
         public int Y;
-
-        public int YOffset = +1;
 
         public float NaviScale;
 
@@ -42,8 +40,6 @@ namespace MiniMappingway.Manager
 
         public bool Loading;
 
-        public string? DebugValue;
-
         public bool DebugMode = false;
 
         public bool IsLocked;
@@ -52,7 +48,7 @@ namespace MiniMappingway.Manager
 
         public AtkUnitBase* NaviMapPointer => (AtkUnitBase*)ServiceManager.GameGui.GetAddonByName("_NaviMap", 1);
 
-        public ExcelSheet<Map>? Maps;
+        public readonly ExcelSheet<Map>? Maps;
 
         [Signature("44 8B 3D ?? ?? ?? ?? 45 85 FF", ScanType = ScanType.StaticAddress)]
         public readonly uint* MapSig1 = null!;
@@ -60,7 +56,7 @@ namespace MiniMappingway.Manager
         [Signature("44 0F 44 3D ?? ?? ?? ??", ScanType = ScanType.StaticAddress)]
         public readonly uint* MapSig2 = null!;
 
-        public ConcurrentDictionary<int,Queue<CircleData>> CircleData = new();
+        public readonly ConcurrentDictionary<int,Queue<CircleData>> CircleData = new();
 
         public NaviMapManager()
         {
@@ -105,22 +101,21 @@ namespace MiniMappingway.Manager
             {
                 var uintColor = ImGui.ColorConvertFloat4ToU32(colour);
                 var sourceData = new SourceData(uintColor);
-                if (sourceName == FinderService.EveryoneKey)
+                switch (sourceName)
                 {
-                    sourceData.Priority = 0;
-                    sourceData.Enabled = false;
-                }
-                if (sourceName == FinderService.FcMembersKey)
-                {
-                    sourceData.Priority = 1;
-                }
-                if (sourceName == FinderService.FriendKey)
-                {
-                    sourceData.Priority = 2;
-                }
-                else
-                {
-                    sourceData.Priority = GetNextFreePriority();
+                    case FinderService.EveryoneKey:
+                        sourceData.Priority = 0;
+                        sourceData.Enabled = false;
+                        break;
+                    case FinderService.FcMembersKey:
+                        sourceData.Priority = 1;
+                        break;
+                    case FinderService.FriendKey:
+                        sourceData.Priority = 2;
+                        break;
+                    default:
+                        sourceData.Priority = GetNextFreePriority();
+                        break;
                 }
 
                 ServiceManager.Configuration.SourceConfigs.TryAdd(sourceName, sourceData);
@@ -161,7 +156,7 @@ namespace MiniMappingway.Manager
             X = NaviMapPointer->X;
             Y = NaviMapPointer->Y;
             NaviScale = NaviMapPointer->Scale;
-            Visible = ((NaviMapPointer->VisibilityFlags & 0x03) == 0);
+            Visible = (NaviMapPointer->VisibilityFlags & 0x03) == 0;
             return true;
         }
 
@@ -170,8 +165,8 @@ namespace MiniMappingway.Manager
             var locationTitle = (AtkUnitBase*)ServiceManager.GameGui.GetAddonByName("_LocationTitle", 1);
             var fadeMiddle = (AtkUnitBase*)ServiceManager.GameGui.GetAddonByName("FadeMiddle", 1);
             return Loading =
-                (locationTitle->IsVisible) ||
-                (fadeMiddle->IsVisible);
+                locationTitle->IsVisible ||
+                fadeMiddle->IsVisible;
         }
 
         public void UpdateMap()
@@ -297,7 +292,7 @@ namespace MiniMappingway.Manager
 
         public int GetNextFreePriority()
         {
-            for(int i = 0; i < 99; i++)
+            for(var i = 0; i < 99; i++)
             {
                 if (SourceDataDict.Values.All(x => x.Priority != i))
                 {

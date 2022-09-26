@@ -20,7 +20,7 @@ namespace MiniMappingway.Utility
         public static Vector2 PlayerPos = new(0, 0);
         public static Vector2 PlayerCirclePos;
 
-        static float _minimapRadius;
+        private static float _minimapRadius;
 
 
         public static bool ChecksPassed;
@@ -103,7 +103,7 @@ namespace MiniMappingway.Utility
             WindowPos = ImGui.GetWindowViewport().Pos;
 
             //Player Circle position will always be center of the minimap, this is also our pivot point
-            PlayerCirclePos = new Vector2(ServiceManager.NaviMapManager.X + (MapSize.X / 2), ServiceManager.NaviMapManager.Y + (MapSize.Y / 2)) + WindowPos;
+            PlayerCirclePos = new Vector2(ServiceManager.NaviMapManager.X + MapSize.X / 2, ServiceManager.NaviMapManager.Y + MapSize.Y / 2) + WindowPos;
 
             //to line up with minimap pivot better
             PlayerCirclePos.Y -= 5f;
@@ -115,7 +115,7 @@ namespace MiniMappingway.Utility
 
                 if (!ServiceManager.NaviMapManager.CircleData.ContainsKey(priority))
                 {
-                    ServiceManager.NaviMapManager.CircleData[priority] = new();
+                    ServiceManager.NaviMapManager.CircleData[priority] = new Queue<CircleData>();
                 }
                 foreach (var person in dict.Value)
                 {
