@@ -59,6 +59,10 @@ namespace MiniMappingway
                         if (ImGui.Checkbox("Enabled", ref enabledLocal))
                         {
                             sourceDataLocal.Enabled = enabledLocal;
+                            if (!enabledLocal)
+                            {
+                                ServiceManager.NaviMapManager.ClearPersonBag(source.Key);
+                            }
                         }
 
                         ImGui.SameLine(90);

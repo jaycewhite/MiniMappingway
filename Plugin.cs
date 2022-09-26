@@ -79,6 +79,11 @@ namespace MiniMappingway
         private void TerritoryChanged(object? sender, ushort e)
         {
             ServiceManager.NaviMapManager.UpdateMap();
+
+            foreach (var dict in ServiceManager.NaviMapManager.PersonDict)
+            {
+                ServiceManager.NaviMapManager.ClearPersonBag(dict.Key);
+            }
         }
 
         private void OnCommand(string? command, string args)
