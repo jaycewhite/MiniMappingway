@@ -218,8 +218,6 @@ namespace MiniMappingway.Service
 
         }
 
-
-
         public void Dispose()
         {
             ServiceManager.Framework.Update -= Iterate;
