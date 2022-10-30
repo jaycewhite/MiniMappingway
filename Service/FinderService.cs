@@ -67,12 +67,22 @@ namespace MiniMappingway.Service
                 dict.Value.TryGetValue(i, out var person);
                 if (person == null)
                 {
-                    return;
+                    continue;
                 }
-
+                
                 if (ServiceManager.ObjectTable[i] == null)
                 {
-                    return;
+                    continue;
+                }
+                var ptr = person.Ptr;
+                unsafe
+                {
+                    var charPointer = (Character*)ptr;
+                    if (charPointer->GameObject.ObjectKind != (byte)ObjectKind.Player)
+                    {
+                        ServiceManager.NaviMapManager.RemoveFromBag(person.Id, dict.Key);
+                        continue;
+                    }
                 }
                 if (ServiceManager.ObjectTable[i]?.Name.ToString() != person.Name)
                 {
@@ -226,7 +236,6 @@ namespace MiniMappingway.Service
         public void Dispose()
         {
             ServiceManager.Framework.Update -= Iterate;
-            //ServiceManager.Framework.Update -= CheckStillInObjectTable;
         }
 
     }

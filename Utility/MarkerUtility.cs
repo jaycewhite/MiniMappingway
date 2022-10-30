@@ -30,7 +30,8 @@ namespace MiniMappingway.Utility
         {
             var personObj = ServiceManager.ObjectTable.CreateObjectReference(person.Value.Ptr);
 
-            if (personObj == null || !personObj.IsValid() || ServiceManager.ObjectTable[person.Key] == null)
+            if (personObj == null || !personObj.IsValid() || ServiceManager.ObjectTable[person.Key] == null 
+                || ((Character*)person.Value.Ptr)->GameObject.ObjectKind != (byte)ObjectKind.Player)
             {
                 ServiceManager.NaviMapManager.RemoveFromBag(person.Value.Id, person.Value.SourceName);
                 return null;

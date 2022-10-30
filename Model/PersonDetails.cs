@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Dalamud.Game.Text.SeStringHandling;
+using System;
 
 namespace MiniMappingway.Model
 {
@@ -11,8 +12,6 @@ namespace MiniMappingway.Model
         public string SourceName { get; }
 
         public IntPtr Ptr { get; }
-
-        //public bool HighestPriority { get; set; }
 
         public PersonDetails(string name, uint id, string sourceName, IntPtr ptr)
         {
