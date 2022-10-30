@@ -7,26 +7,29 @@ using Dalamud.Game.ClientState.Objects.Enums;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using MiniMappingway.Manager;
 using MiniMappingway.Model;
-using MiniMappingway.Utility;
+using MiniMappingway.Service.Interface;
 
 namespace MiniMappingway.Service
 {
-    public sealed class FinderService : IDisposable
+    public sealed class FinderService : IDisposable, IFinderService
     {
-        public const string FcMembersKey = "FC Members";
-        public const string FriendKey = "Friends";
-        public const string EveryoneKey = "Everyone";
+        private readonly ISourceService _sourceService;
+        private readonly IPersonService _personService;
+        private readonly IGameStateService _gameStateService;
         private readonly IEnumerable<int> _enumerable;
         private IEnumerator<int> _enumerator;
         private int _index;
 
 
 
-        public FinderService()
+        public FinderService(ISourceService sourceService, IPersonService personService, IGameStateService gameStateService)
         {
-            ServiceManager.NaviMapManager.AddOrUpdateSource(FriendKey, new Vector4(0.957f,0.533f,0.051f,1));
-            ServiceManager.NaviMapManager.AddOrUpdateSource(FcMembersKey, new Vector4(1, 0, 0, 1));
-            ServiceManager.NaviMapManager.AddOrUpdateSource(EveryoneKey, new Vector4(0, 0.7f, 0.7f, 1));
+            _sourceService = sourceService;
+            _personService = personService;
+            _gameStateService = gameStateService;
+            _sourceService.AddOrUpdateSource(IPersonService.FriendKey, new Vector4(0.957f,0.533f,0.051f,1));
+            _sourceService.AddOrUpdateSource(IPersonService.FcMembersKey, new Vector4(1, 0, 0, 1));
+            _sourceService.AddOrUpdateSource(IPersonService.EveryoneKey, new Vector4(0, 0.7f, 0.7f, 1));
             ServiceManager.Framework.Update += Iterate;
 
 
@@ -56,11 +59,11 @@ namespace MiniMappingway.Service
             _index = _enumerator.Current;
         }
 
-        private static void CheckSamePerson(in int i)
+        private void CheckSamePerson(in int i)
         {
-            foreach (var dict in ServiceManager.NaviMapManager.PersonDict)
+            foreach (var dict in _personService.PersonDict)
             {
-                if (!ServiceManager.NaviMapManager.SourceDataDict[dict.Key].Enabled)
+                if (!_sourceService.SourceDataDict[dict.Key].Enabled)
                 {
                     continue;
                 }
@@ -76,23 +79,23 @@ namespace MiniMappingway.Service
                 }
                 if (ServiceManager.ObjectTable[i]?.Name.ToString() != person.Name)
                 {
-                    ServiceManager.NaviMapManager.RemoveFromBag(person.Id,dict.Key);
+                    _personService.RemoveFromBag(person.Id,dict.Key);
                 }
             }
         }
-        private static void CheckNewPeople(in int i)
+        private void CheckNewPeople(in int i)
         {
-            if (MarkerUtility.ChecksPassed)
+            if (_gameStateService.ChecksPassed)
             {
                 LookFor(i);
             }
         }
 
-        private static unsafe void LookFor(int i)
+        private unsafe void LookFor(int i)
         {
-            ServiceManager.Configuration.SourceConfigs.TryGetValue(FriendKey, out var friendConfig);
-            ServiceManager.Configuration.SourceConfigs.TryGetValue(FcMembersKey, out var fcConfig);
-            ServiceManager.Configuration.SourceConfigs.TryGetValue(EveryoneKey, out var everyoneConfig);
+            _sourceService.SourceDataDict.TryGetValue(IPersonService.FriendKey, out var friendConfig);
+            _sourceService.SourceDataDict.TryGetValue(IPersonService.FcMembersKey, out var fcConfig);
+            _sourceService.SourceDataDict.TryGetValue(IPersonService.EveryoneKey, out var everyoneConfig);
             if (fcConfig == null || friendConfig == null || everyoneConfig == null)
             {
                 return;
@@ -114,10 +117,8 @@ namespace MiniMappingway.Service
                 {
                     return;
                 }
-
-                ServiceManager.NaviMapManager.InCombat =
-                    ((StatusFlags)player->StatusFlags).HasFlag(StatusFlags.InCombat);
-                if (ServiceManager.NaviMapManager.InCombat)
+                
+                if (_gameStateService.InCombat)
                 {
                     return;
                 }
@@ -136,8 +137,8 @@ namespace MiniMappingway.Service
 
             if (obj == null) { return; }
 
-            ServiceManager.NaviMapManager.PersonDict.TryGetValue(FriendKey, out var friendDict);
-            ServiceManager.NaviMapManager.PersonDict.TryGetValue(FcMembersKey, out var fcDict);
+            _personService.PersonDict.TryGetValue(IPersonService.FriendKey, out var friendDict);
+            _personService.PersonDict.TryGetValue(IPersonService.FcMembersKey, out var fcDict);
 
             if (friendDict == null || fcDict == null)
             {
@@ -176,9 +177,9 @@ namespace MiniMappingway.Service
                 //IsCasting currently means friend
                 if (((StatusFlags)charPointer->StatusFlags).HasFlag(StatusFlags.IsCasting))
                 {
-                    var personDetails = new PersonDetails(obj.Name.ToString(), obj.ObjectId, FriendKey, obj.Address);
+                    var personDetails = new PersonDetails(obj.Name.ToString(), obj.ObjectId, IPersonService.FriendKey, obj.Address);
                     alreadyInFriendBag = true;
-                    ServiceManager.NaviMapManager.AddToBag(personDetails);
+                    _personService.AddToBag(personDetails);
 
                 }
             }
@@ -198,9 +199,9 @@ namespace MiniMappingway.Service
                 if (playerFc.SequenceEqual(tempFc))
                 {
 
-                    var personDetails = new PersonDetails(obj.Name.ToString(), obj.ObjectId, FcMembersKey, obj.Address);
+                    var personDetails = new PersonDetails(obj.Name.ToString(), obj.ObjectId, IPersonService.FcMembersKey, obj.Address);
                     alreadyInFcBag = true;
-                    ServiceManager.NaviMapManager.AddToBag(personDetails);
+                    _personService.AddToBag(personDetails);
                     
 
 
@@ -209,9 +210,9 @@ namespace MiniMappingway.Service
 
             if (!alreadyInFcBag && !alreadyInFriendBag && everyoneConfig.Enabled)
             {
-                var personDetails = new PersonDetails(obj.Name.ToString(), obj.ObjectId, EveryoneKey, obj.Address);
+                var personDetails = new PersonDetails(obj.Name.ToString(), obj.ObjectId, IPersonService.EveryoneKey, obj.Address);
 
-                ServiceManager.NaviMapManager.AddToBag(personDetails);
+                _personService.AddToBag(personDetails);
 
             }
 

@@ -2,12 +2,12 @@
 
 namespace MiniMappingway.Model
 {
-    public class CircleData
+    public class Marker
     {
         public Vector2 Position;
         public readonly string SourceName;
 
-        public CircleData(Vector2 position, string sourceName)
+        public Marker(Vector2 position, string sourceName)
         {
             Position = position;
             SourceName = sourceName;

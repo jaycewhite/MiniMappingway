@@ -22,28 +22,8 @@ namespace MiniMappingway.Manager
         [PluginService] public static DalamudPluginInterface DalamudPluginInterface { get; private set; } = null!;
         [PluginService] public static CommandManager CommandManager { get; private set; } = null!;
         [PluginService] public static Framework Framework { get; private set; } = null!;
-        public static WindowSystem WindowSystem { get; private set; } = new("MiniMappingway");
 
-
-        //Custom services
-        public static FinderService FinderService { get; set; } = null!;
-
-
-        //Custom managers
-        public static NaviMapManager NaviMapManager { get; set; } = null!;
-        public static Configuration Configuration { get; set; } = null!;
         public static PluginUi PluginUi { get; set; } = null!;
-        public static WindowManager WindowManager { get; set; } = null!;
-
-        //Api Controller 
-        public static ApiController ApiController { get; set; } = null!;
-
-        public static void Dispose()
-        {
-            FinderService.Dispose();
-            NaviMapManager.Dispose();
-            WindowManager.Dispose();
-            ApiController.Dispose();
-        }
+        //public static WindowSystem WindowSystem { get; private set; } = new("MiniMappingway");
     }
 }

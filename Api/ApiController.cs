@@ -4,6 +4,7 @@ using System.Numerics;
 using Dalamud.Plugin.Ipc;
 using MiniMappingway.Manager;
 using MiniMappingway.Model;
+using MiniMappingway.Service.Interface;
 
 namespace MiniMappingway.Api
 {
@@ -23,6 +24,9 @@ namespace MiniMappingway.Api
     /// </summary>
     public class ApiController : IDisposable
     {
+        private readonly ISourceService _sourceService;
+        private readonly IPersonService _personService;
+
         private const int ApiVersionMajor = 1;
         private const int ApiVersionMinor = 0;
 
@@ -42,7 +46,7 @@ namespace MiniMappingway.Api
 
         private readonly ICallGateProvider<string, bool> _removeSourceAndPeopleIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<string, bool>("MiniMappingway.RemoveSourceAndPeople");
 
-        public ApiController()
+        public ApiController(IPersonService personService, ISourceService sourceService)
         {
             _getVersionIpc.RegisterFunc(CheckVersion);
             _registerOrUpdateSourceVecIpc.RegisterFunc(RegisterOrUpdateSource);
@@ -52,6 +56,9 @@ namespace MiniMappingway.Api
             _removePersonByNameIpc.RegisterFunc(RemovePerson);
             _removePersonByIdIpc.RegisterFunc(RemovePerson);
             _removeSourceAndPeopleIpc.RegisterFunc(RemoveSourceAndPeople);
+
+            _personService = personService;
+            _sourceService = sourceService;
         }
 
         /// <summary>
@@ -71,7 +78,7 @@ namespace MiniMappingway.Api
         /// <returns>Success boolean</returns>
         private bool RegisterOrUpdateSource(string sourceName, Vector4 color)
         {
-            return ServiceManager.NaviMapManager.AddOrUpdateSource(sourceName, color);
+            return _sourceService.AddOrUpdateSource(sourceName, color);
         }
 
         /// <summary>
@@ -82,7 +89,7 @@ namespace MiniMappingway.Api
         /// <returns>Success boolean</returns>
         private bool RegisterOrUpdateSource(string sourceName, uint color)
         {
-            return ServiceManager.NaviMapManager.AddOrUpdateSource(sourceName, color);
+            return _sourceService.AddOrUpdateSource(sourceName, color);
         }
 
         /// <summary>
@@ -93,7 +100,7 @@ namespace MiniMappingway.Api
         /// <returns>Success boolean</returns>
         private bool OverwriteList(string sourceName, List<PersonDetails> list)
         {
-            return ServiceManager.NaviMapManager.OverwriteWholeBag(sourceName, list);
+            return _personService.OverwriteWholeBag(sourceName, list);
         }
 
         /// <summary>
@@ -110,7 +117,7 @@ namespace MiniMappingway.Api
             {
                 return false;
             }
-            return ServiceManager.NaviMapManager.AddToBag(new PersonDetails(name, id, sourceName,person.Address));
+            return _personService.AddToBag(new PersonDetails(name, id, sourceName,person.Address));
         }
 
         /// <summary>
@@ -121,7 +128,7 @@ namespace MiniMappingway.Api
         /// <returns>Success boolean</returns>
         private bool RemovePerson(string name, string sourceName)
         {
-            return ServiceManager.NaviMapManager.RemoveFromBag(name, sourceName);
+            return _personService.RemoveFromBag(name, sourceName);
         }
 
         /// <summary>
@@ -132,7 +139,7 @@ namespace MiniMappingway.Api
         /// <returns>Success boolean</returns>
         private bool RemovePerson(uint id, string sourceName)
         {
-            return ServiceManager.NaviMapManager.RemoveFromBag(id, sourceName);
+            return _personService.RemoveFromBag(id, sourceName);
         }
 
         /// <summary>
@@ -142,7 +149,7 @@ namespace MiniMappingway.Api
         /// <returns>Success boolean</returns>
         private bool RemoveSourceAndPeople(string sourceName)
         {
-            return ServiceManager.NaviMapManager.RemoveSourceAndPeople(sourceName);
+            return _sourceService.RemoveSourceAndPeople(sourceName);
         }
 
         public void Dispose()

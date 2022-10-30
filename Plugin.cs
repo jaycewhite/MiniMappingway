@@ -1,18 +1,34 @@
-﻿using Dalamud.Game.Command;
+﻿using System;
+using System.Collections.Concurrent;
+using Dalamud.Data;
+using Dalamud.Game;
+using Dalamud.Game.ClientState;
+using Dalamud.Game.ClientState.Objects;
+using Dalamud.Game.Command;
+using Dalamud.Game.Gui;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.IoC;
 using Dalamud.Logging;
 using Dalamud.Plugin;
 using ImGuiNET;
+using Microsoft.Extensions.DependencyInjection;
 using MiniMappingway.Api;
 using MiniMappingway.Manager;
+using MiniMappingway.Model;
 using MiniMappingway.Service;
+using MiniMappingway.Service.Interface;
 
 namespace MiniMappingway
 {
     public sealed class Plugin : IDalamudPlugin
     {
+        private static IServiceProvider _serviceProvider;
+
+        
+
+        
+
         public string Name => "Mini-Mappingway";
 
         private const string CommandName = "/mmway";
@@ -26,26 +42,6 @@ namespace MiniMappingway
         {
             pluginInterface.Create<ServiceManager>();
 
-            ServiceManager.Configuration = ServiceManager.DalamudPluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
-            ServiceManager.Configuration.Initialize();
-
-            #region Initialise Managers
-
-            ServiceManager.NaviMapManager = new NaviMapManager();
-            ServiceManager.PluginUi = new PluginUi();
-            ServiceManager.WindowManager = new WindowManager();
-            ServiceManager.ApiController = new ApiController();
-
-            #endregion
-
-            #region Initialise Services
-
-            ServiceManager.FinderService = new FinderService();
-
-            #endregion
-
-            ServiceManager.WindowManager.AddWindowsToWindowSystem();
-
             #region Setup Commands and Actions
 
             ServiceManager.CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
@@ -56,7 +52,7 @@ namespace MiniMappingway
             ServiceManager.CommandManager.AddHandler(CommandNameDebug, new CommandInfo(OnCommand));
             ServiceManager.DalamudPluginInterface.UiBuilder.Draw += DrawUi;
 
-            ServiceManager.DalamudPluginInterface.UiBuilder.Draw += ServiceManager.WindowSystem.Draw;
+            ServiceManager.DalamudPluginInterface.UiBuilder.Draw += _serviceProvider.GetService<IWindowService>().Draw;
             ServiceManager.DalamudPluginInterface.UiBuilder.OpenConfigUi += DrawConfigUi;
 
             ServiceManager.ClientState.TerritoryChanged += TerritoryChanged;
@@ -64,30 +60,56 @@ namespace MiniMappingway
             #endregion
         }
 
+        private static void ConfigureServices()
+        {
+            var services = new ServiceCollection();
+
+            services.AddSingleton<IPersonService, PersonService>();
+            services.AddSingleton<ISourceService, SourceService>();
+            services.AddSingleton<IMapService, MapService>();
+            services.AddSingleton<IFinderService, FinderService>();
+            services.AddSingleton<IMarkerService, MarkerService>();
+            services.AddSingleton<IWindowService, WindowService>();
+            services.AddSingleton<IConfigurationService, ConfigurationService>();
+            services.AddSingleton<IGameStateService, GameStateService>();
+            services.AddSingleton<ClientState>();
+            services.AddSingleton<GameGui>();
+            services.AddSingleton<ObjectTable>();
+            services.AddSingleton<DataManager>();
+            services.AddSingleton<DalamudPluginInterface>();
+            services.AddSingleton<CommandManager>();
+            services.AddSingleton<Framework>();
+
+            _serviceProvider = services.BuildServiceProvider();
+        }
+
         public void Dispose()
         {
             ServiceManager.CommandManager.RemoveHandler(CommandName);
             ServiceManager.CommandManager.RemoveHandler(CommandNameDebug);
             ServiceManager.DalamudPluginInterface.UiBuilder.Draw -= DrawUi;
-            ServiceManager.DalamudPluginInterface.UiBuilder.Draw -= ServiceManager.WindowSystem.Draw;
+            ServiceManager.DalamudPluginInterface.UiBuilder.Draw -= _serviceProvider.GetService<IWindowService>().Draw;
             ServiceManager.DalamudPluginInterface.UiBuilder.OpenConfigUi -= DrawConfigUi;
             ServiceManager.ClientState.TerritoryChanged -= TerritoryChanged;
-            ServiceManager.Dispose();
 
         }
 
         private void TerritoryChanged(object? sender, ushort e)
         {
-            ServiceManager.NaviMapManager.UpdateMap();
+            _serviceProvider.GetService<IMapService>().UpdateMap();
+            var personService = _serviceProvider.GetService<IPersonService>();
 
-            foreach (var dict in ServiceManager.NaviMapManager.PersonDict)
+            foreach (var dict in personService.PersonDict)
             {
-                ServiceManager.NaviMapManager.ClearPersonBag(dict.Key);
+                personService.ClearBag(dict.Key);
             }
         }
 
         private void OnCommand(string? command, string args)
         {
+            var gameStateService = _serviceProvider.GetService<IGameStateService>();
+            var windowService = _serviceProvider.GetService<IWindowService>();
+
             PluginLog.Verbose("Command received");
 
             if (command != null && command == "/mmway")
@@ -96,14 +118,14 @@ namespace MiniMappingway
             }
             if (command != null && command == CommandNameDebug)
             {
-                ServiceManager.NaviMapManager.DebugMode = !ServiceManager.NaviMapManager.DebugMode;
-                if (ServiceManager.NaviMapManager.DebugMode)
+                gameStateService.DebugMode = !gameStateService.DebugMode;
+                if (gameStateService.DebugMode)
                 {
-                    ServiceManager.WindowManager.NaviMapWindow.Flags &= ~ImGuiWindowFlags.NoBackground;
+                    windowService.NaviMapWindow.Flags &= ~ImGuiWindowFlags.NoBackground;
                 }
                 else
                 {
-                    ServiceManager.WindowManager.NaviMapWindow.Flags |= ImGuiWindowFlags.NoBackground;
+                    windowService.NaviMapWindow.Flags |= ImGuiWindowFlags.NoBackground;
 
                 }
             }

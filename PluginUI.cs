@@ -5,6 +5,7 @@ using ImGuiNET;
 using MiniMappingway.Manager;
 using MiniMappingway.Model;
 using MiniMappingway.Service;
+using MiniMappingway.Service.Interface;
 
 namespace MiniMappingway
 {
@@ -12,6 +13,15 @@ namespace MiniMappingway
     // to do any cleanup
     public class PluginUi : IDisposable
     {
+        private readonly IConfigurationService _configurationService;
+        private readonly ISourceService _sourceService;
+
+        public PluginUi(IConfigurationService configurationService, ISourceService sourceService)
+        {
+            _configurationService = configurationService;
+            _sourceService = sourceService;
+        }
+
         // this extra bool exists for ImGui, since you can't ref a property
         private bool _settingsVisible;
         public bool SettingsVisible
@@ -35,11 +45,12 @@ namespace MiniMappingway
             if (ImGui.Begin("Mini-Mappingway Settings", ref _settingsVisible, ImGuiWindowFlags.NoCollapse))
             {
                 // can't ref a property, so use a local copy
-                var enabled = ServiceManager.Configuration.Enabled;
+                var config = _configurationService.GetConfiguration();
+                var enabled = _configurationService.GetConfiguration().Enabled;
                 if (ImGui.Checkbox("Enabled", ref enabled))
                 {
-                    ServiceManager.Configuration.Enabled = enabled;
-                    ServiceManager.Configuration.Save();
+                    config.Enabled = enabled;
+                    config.Save();
                 }
 
                 ImGui.TextColored(new Vector4(255, 0, 0, 255), "For now FC members are found by comparing FC tags.");
@@ -47,7 +58,7 @@ namespace MiniMappingway
 
                 ImGui.Text("Marker settings, ordered by priority:");
 
-                foreach (var source in ServiceManager.NaviMapManager.SourceDataDict.OrderBy(x => x.Value.Priority))
+                foreach (var source in _sourceService.SourceDataDict.OrderBy(x => x.Value.Priority))
                 {
                     ImGui.PushID(source.Key);
                     var sourceDataLocal = new SourceData(source.Value);
@@ -66,7 +77,7 @@ namespace MiniMappingway
                         var tempPriority = sourceDataLocal.Priority;
                         var isPriorityError = false;
 
-                        if (source.Key == FinderService.EveryoneKey)
+                        if (source.Key == IPersonService.EveryoneKey)
                         {
                             ImGui.Text("\"Everyone\" is always the lowest priority");
 
@@ -90,7 +101,7 @@ namespace MiniMappingway
                                 
                                 sourceDataLocal.Priority = tempPriority;
                             }
-                            isPriorityError = ServiceManager.NaviMapManager.SourceDataDict.Any(x => x.Value.Priority == tempPriority && x.Key != source.Key);
+                            isPriorityError = _sourceService.SourceDataDict.Any(x => x.Value.Priority == tempPriority && x.Key != source.Key);
 
                             ImGui.PopItemWidth();
                             ImGui.SameLine();
@@ -143,15 +154,15 @@ namespace MiniMappingway
                             sourceDataLocal.BorderRadius = borderRadius;
                         }
 
-                        ServiceManager.NaviMapManager.SourceDataDict.AddOrUpdate(source.Key, sourceDataLocal, (_, _) => sourceDataLocal);
-                        if (sourceDataLocal != ServiceManager.Configuration.SourceConfigs[source.Key])
+                        _sourceService.SourceDataDict.AddOrUpdate(source.Key, sourceDataLocal, (_, _) => sourceDataLocal);
+                        if (sourceDataLocal != _configurationService.GetConfiguration().SourceConfigs[source.Key])
                         {
                             if (!isPriorityError)
                             {
-                                ServiceManager.Configuration.SourceConfigs[source.Key] = sourceDataLocal;
+                                _configurationService.GetConfiguration().SourceConfigs[source.Key] = sourceDataLocal;
 
                             }
-                            ServiceManager.Configuration.Save();
+                            _configurationService.GetConfiguration().Save();
                         }
                         ImGui.EndListBox();
 
