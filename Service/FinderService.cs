@@ -166,6 +166,11 @@ namespace MiniMappingway.Service
             {
                 return;
             }
+            if (charPointer->GameObject.ObjectKind == (byte)ObjectKind.BattleNpc)
+            {
+                return;
+            }
+
             if (((StatusFlags)charPointer->StatusFlags).HasFlag(StatusFlags.AllianceMember))
             {
                 return;
