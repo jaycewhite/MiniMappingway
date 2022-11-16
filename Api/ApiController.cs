@@ -21,6 +21,9 @@ namespace MiniMappingway.Api
     /// Trying to remove a person that isn't in the list is safe, and will return false.
     /// Trying to add a person that is already in the list is safe, and will return false.
     /// </summary>
+    /// <remarks>
+    /// I might add more methods for adding to list of player names instead of specific references to player objects. These would then be scanned by mini-mappingway on your behalf. If you would like this let me know.
+    /// </remarks>
     public class ApiController : IDisposable
     {
         private const int ApiVersionMajor = 1;
