@@ -24,7 +24,7 @@ namespace MiniMappingway.Api
     public class ApiController : IDisposable
     {
         private const int ApiVersionMajor = 1;
-        private const int ApiVersionMinor = 0;
+        private const int ApiVersionMinor = 1;
 
         private readonly ICallGateProvider<Tuple<int, int>> _getVersionIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<Tuple<int, int>>("MiniMappingway.CheckVersion");
 
@@ -32,7 +32,7 @@ namespace MiniMappingway.Api
 
         private readonly ICallGateProvider<string, uint, bool> _registerOrUpdateSourceUintIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<string,uint,bool>("MiniMappingway.RegisterOrUpdateSourceUint");
 
-        private readonly ICallGateProvider<string, List<PersonDetails>, bool> _overwriteListIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<string, List<PersonDetails>, bool>("MiniMappingway.OverwriteList");
+        //private readonly ICallGateProvider<string, List<PersonDetails>, bool> _overwriteListIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<string, List<PersonDetails>, bool>("MiniMappingway.OverwriteList");
 
         private readonly ICallGateProvider<string, string, uint, bool> _addPersonIpc = ServiceManager.DalamudPluginInterface.GetIpcProvider<string, string, uint, bool>("MiniMappingway.AddPerson");
 
@@ -47,7 +47,7 @@ namespace MiniMappingway.Api
             _getVersionIpc.RegisterFunc(CheckVersion);
             _registerOrUpdateSourceVecIpc.RegisterFunc(RegisterOrUpdateSource);
             _registerOrUpdateSourceUintIpc.RegisterFunc(RegisterOrUpdateSource);
-            _overwriteListIpc.RegisterFunc(OverwriteList);
+            //_overwriteListIpc.RegisterFunc(OverwriteList);
             _addPersonIpc.RegisterFunc(AddPerson);
             _removePersonByNameIpc.RegisterFunc(RemovePerson);
             _removePersonByIdIpc.RegisterFunc(RemovePerson);
@@ -85,16 +85,18 @@ namespace MiniMappingway.Api
             return ServiceManager.NaviMapManager.AddOrUpdateSource(sourceName, color);
         }
 
+        //I don't like the below method, I may rewrite it, please don't use it
+
         /// <summary>
         /// Overwrite all people in list for source
         /// </summary>
         /// <param name="sourceName">Source name</param>
         /// <param name="list">List of people you wish to replace with</param>
         /// <returns>Success boolean</returns>
-        private bool OverwriteList(string sourceName, List<PersonDetails> list)
-        {
-            return ServiceManager.NaviMapManager.OverwriteWholeBag(sourceName, list);
-        }
+        //private bool OverwriteList(string sourceName, List<PersonDetails> list)
+        //{
+        //    return ServiceManager.NaviMapManager.OverwriteWholeBag(sourceName, list);
+        //}
 
         /// <summary>
         /// Add person to list for source
@@ -150,7 +152,7 @@ namespace MiniMappingway.Api
             _getVersionIpc.UnregisterFunc();
             _registerOrUpdateSourceVecIpc.UnregisterFunc();
             _registerOrUpdateSourceUintIpc.UnregisterFunc();
-            _overwriteListIpc.UnregisterFunc();
+            //_overwriteListIpc.UnregisterFunc();
             _addPersonIpc.UnregisterFunc();
             _removePersonByNameIpc.UnregisterFunc();
             _removePersonByIdIpc.UnregisterFunc();
