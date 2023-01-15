@@ -14,5 +14,6 @@
     "FC",
     "mmway"
   ],
-  "RepoUrl": "https://github.com/jaycewhite/MiniMappingway"
+  "RepoUrl": "https://github.com/jaycewhite/MiniMappingway",
+  "DalamudAPILevel":  8
 }
