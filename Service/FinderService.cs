@@ -206,11 +206,7 @@ namespace MiniMappingway.Service
                 }
                 var tempFc = new ReadOnlySpan<byte>(charPointer->FreeCompanyTag, 7);
                 var playerFc = new ReadOnlySpan<byte>(fc, 7);
-                if (fc->CompareTo(0) == 0)
-                {
-                    return;
-                }
-                if (playerFc.SequenceEqual(tempFc))
+                if (playerFc.SequenceEqual(tempFc) && fc->CompareTo(0) != 0)
                 {
 
                     var personDetails = new PersonDetails(obj.Name.ToString(), obj.ObjectId, FcMembersKey, obj.Address);
