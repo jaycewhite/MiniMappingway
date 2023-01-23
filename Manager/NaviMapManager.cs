@@ -156,7 +156,7 @@ namespace MiniMappingway.Manager
             X = NaviMapPointer->X;
             Y = NaviMapPointer->Y;
             NaviScale = NaviMapPointer->Scale;
-            Visible = (NaviMapPointer->VisibilityFlags & 0x03) == 0;
+            Visible = (NaviMapPointer->IsVisible && NaviMapPointer->VisibilityFlags == 0);
             return true;
         }
 
