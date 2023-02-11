@@ -138,8 +138,6 @@ namespace MiniMappingway.Service
                 // ignored
             }
 
-            //Parallel.For(1, ServiceManager.ObjectTable.Length, (i, state) =>
-
             var alreadyInFriendBag = false;
             var alreadyInFcBag = false;
             var obj = ServiceManager.ObjectTable[i];
@@ -206,15 +204,15 @@ namespace MiniMappingway.Service
                 }
                 var tempFc = new ReadOnlySpan<byte>(charPointer->FreeCompanyTag, 7);
                 var playerFc = new ReadOnlySpan<byte>(fc, 7);
-                if (playerFc.SequenceEqual(tempFc) && fc->CompareTo(0) != 0)
+                if (fc->CompareTo(0) != 0)
                 {
+                    if (playerFc.SequenceEqual(tempFc))
+                    {
 
-                    var personDetails = new PersonDetails(obj.Name.ToString(), obj.ObjectId, FcMembersKey, obj.Address);
-                    alreadyInFcBag = true;
-                    ServiceManager.NaviMapManager.AddToBag(personDetails);
-                    
-
-
+                        var personDetails = new PersonDetails(obj.Name.ToString(), obj.ObjectId, FcMembersKey, obj.Address);
+                        alreadyInFcBag = true;
+                        ServiceManager.NaviMapManager.AddToBag(personDetails);
+                    }
                 }
             }
 
