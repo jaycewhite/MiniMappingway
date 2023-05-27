@@ -125,8 +125,7 @@ namespace MiniMappingway.Service
                     return;
                 }
 
-                ServiceManager.NaviMapManager.InCombat =
-                    ((StatusFlags)player->StatusFlags).HasFlag(StatusFlags.InCombat);
+                ServiceManager.NaviMapManager.InCombat = player->InCombat;
                 if (ServiceManager.NaviMapManager.InCombat)
                 {
                     return;
@@ -179,15 +178,14 @@ namespace MiniMappingway.Service
                 return;
             }
 
-            if (((StatusFlags)charPointer->StatusFlags).HasFlag(StatusFlags.AllianceMember))
+            if (charPointer->IsAllianceMember && charPointer->IsPartyMember)
             {
                 return;
             }
 
             if (friendConfig.Enabled && !alreadyInFriendBag)
             {
-                //IsCasting currently means friend
-                if (((StatusFlags)charPointer->StatusFlags).HasFlag(StatusFlags.IsCasting))
+                if (charPointer->IsFriend)
                 {
                     var personDetails = new PersonDetails(obj.Name.ToString(), obj.ObjectId, FriendKey, obj.Address);
                     alreadyInFriendBag = true;

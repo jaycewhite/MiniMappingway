@@ -37,7 +37,7 @@ namespace MiniMappingway.Utility
                 return null;
             }
 
-            var isPartyMember = ((StatusFlags)((Character*)personObj.Address)->StatusFlags).HasFlag(StatusFlags.AllianceMember);
+            var isPartyMember = ((Character*)personObj.Address)->IsAllianceMember || ((Character*)personObj.Address)->IsPartyMember;
 
             if (isPartyMember)
             {
