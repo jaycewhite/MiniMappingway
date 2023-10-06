@@ -1,12 +1,13 @@
 ﻿using System.Linq;
 using System.Numerics;
+using Dalamud.Interface.Windowing;
 using ImGuiNET;
 using MiniMappingway.Manager;
 using MiniMappingway.Utility;
 
-namespace MiniMappingway.Window
+namespace MiniMappingway.Windows
 {
-    internal class NaviMapWindow : Dalamud.Interface.Windowing.Window
+    internal class NaviMapWindow : Window
     {
         public NaviMapWindow() : base("NaviMapWindow")
         {

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Numerics;
 using Dalamud.Plugin.Ipc;
 using MiniMappingway.Manager;

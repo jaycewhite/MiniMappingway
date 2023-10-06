@@ -1,5 +1,4 @@
-﻿using Dalamud.Game.Text.SeStringHandling;
-using System;
+﻿using System;
 
 namespace MiniMappingway.Model
 {

@@ -3,7 +3,6 @@ using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.IoC;
 using Dalamud.Plugin;
-using Dalamud.Plugin.Services;
 using ImGuiNET;
 using MiniMappingway.Api;
 using MiniMappingway.Manager;
@@ -55,7 +54,6 @@ namespace MiniMappingway
             });
 
             ServiceManager.CommandManager.AddHandler(CommandNameDebug, new CommandInfo(OnCommand));
-            ServiceManager.DalamudPluginInterface.UiBuilder.Draw += DrawUi;
 
             ServiceManager.DalamudPluginInterface.UiBuilder.Draw += ServiceManager.WindowSystem.Draw;
             ServiceManager.DalamudPluginInterface.UiBuilder.OpenConfigUi += DrawConfigUi;
@@ -69,7 +67,6 @@ namespace MiniMappingway
         {
             ServiceManager.CommandManager.RemoveHandler(CommandName);
             ServiceManager.CommandManager.RemoveHandler(CommandNameDebug);
-            ServiceManager.DalamudPluginInterface.UiBuilder.Draw -= DrawUi;
             ServiceManager.DalamudPluginInterface.UiBuilder.Draw -= ServiceManager.WindowSystem.Draw;
             ServiceManager.DalamudPluginInterface.UiBuilder.OpenConfigUi -= DrawConfigUi;
             ServiceManager.ClientState.TerritoryChanged -= TerritoryChanged;
@@ -91,11 +88,11 @@ namespace MiniMappingway
         {
             ServiceManager.Log.Verbose("Command received");
 
-            if (command != null && command == "/mmway")
+            if (command is "/mmway")
             {
-                ServiceManager.PluginUi.SettingsVisible = true;
+                ServiceManager.WindowManager.SettingsWindow.Toggle();
             }
-            if (command != null && command == CommandNameDebug)
+            if (command is CommandNameDebug)
             {
                 ServiceManager.NaviMapManager.DebugMode = !ServiceManager.NaviMapManager.DebugMode;
                 if (ServiceManager.NaviMapManager.DebugMode)
@@ -111,15 +108,10 @@ namespace MiniMappingway
             // in response to the slash command, just display our main ui
 
         }
-
-        private void DrawUi()
-        {
-            ServiceManager.PluginUi.DrawSettingsWindow();
-        }
+        
         private void DrawConfigUi()
         {
-            ServiceManager.Log.Verbose("Draw config ui on");
-            ServiceManager.PluginUi.SettingsVisible = true;
+            ServiceManager.WindowManager.SettingsWindow.Toggle();
         }
     }
 }
