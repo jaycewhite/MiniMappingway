@@ -27,7 +27,7 @@ namespace MiniMappingway
         public delegate void OnMessageDelegate(XivChatType type, uint senderId, ref SeString sender, ref SeString message, ref bool isHandled);
 
         public Plugin(
-            [RequiredVersion("9.0")] DalamudPluginInterface pluginInterface)
+            [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface)
         {
             pluginInterface.Create<ServiceManager>();
 
