@@ -2,7 +2,6 @@
   "Author": "JayceOfSpades",
   "Name": "Mini-Mappingway",
   "Punchline": "A plugin to show your friends and FC members on the minimap",
-  "AssemblyVersion": "1.0.0.3",
   "Description": "A plugin to show your friends and FC members on the minimap. Customise the markers and toggle whether you want to see friends, FC members, or both, in the settings! Icon by @Miendoodle on twitter. Thanks nya for the idea!",
   "InternalName": "MiniMappingway",
   "ApplicableVersion": "any",
@@ -14,6 +13,5 @@
     "FC",
     "mmway"
   ],
-  "RepoUrl": "https://github.com/jaycewhite/MiniMappingway",
-  "DalamudAPILevel": 9
+  "RepoUrl": "https://github.com/jaycewhite/MiniMappingway"
 }
