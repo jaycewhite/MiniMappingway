@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using Dalamud.Game;
 using Dalamud.Game.ClientState.Objects.Enums;
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using MiniMappingway.Manager;
 using MiniMappingway.Model;
@@ -40,7 +40,7 @@ namespace MiniMappingway.Service
 
         }
 
-        private void Iterate(Framework framework)
+        private void Iterate(IFramework framework)
         {
 
             CheckNewPeople(_index);

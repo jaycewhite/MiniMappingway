@@ -2,8 +2,8 @@
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.IoC;
-using Dalamud.Logging;
 using Dalamud.Plugin;
+using Dalamud.Plugin.Services;
 using ImGuiNET;
 using MiniMappingway.Api;
 using MiniMappingway.Manager;
@@ -13,16 +13,21 @@ namespace MiniMappingway
 {
     public sealed class Plugin : IDalamudPlugin
     {
-        public string Name => "Mini-Mappingway";
+        internal static string Name => "Mini-Mappingway";
 
         private const string CommandName = "/mmway";
         private const string CommandNameDebug = "/mmwaydebug";
 
+        [PluginService]
+        internal static IPluginLog Log { get; private set; } = null!;
+
+        [PluginService]
+        internal static IGameInteropProvider GameInteropProvider { get; private set; } = null!;
 
         public delegate void OnMessageDelegate(XivChatType type, uint senderId, ref SeString sender, ref SeString message, ref bool isHandled);
 
         public Plugin(
-            [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface)
+            [RequiredVersion("9.0")] DalamudPluginInterface pluginInterface)
         {
             pluginInterface.Create<ServiceManager>();
 
@@ -31,7 +36,7 @@ namespace MiniMappingway
 
             #region Initialise Managers
 
-            ServiceManager.NaviMapManager = new NaviMapManager();
+            ServiceManager.NaviMapManager = new NaviMapManager(GameInteropProvider);
             ServiceManager.PluginUi = new PluginUi();
             ServiceManager.WindowManager = new WindowManager();
             ServiceManager.ApiController = new ApiController();
@@ -76,7 +81,7 @@ namespace MiniMappingway
 
         }
 
-        private void TerritoryChanged(object? sender, ushort e)
+        private void TerritoryChanged(ushort _)
         {
             ServiceManager.NaviMapManager.UpdateMap();
 
@@ -88,7 +93,7 @@ namespace MiniMappingway
 
         private void OnCommand(string? command, string args)
         {
-            PluginLog.Verbose("Command received");
+            Plugin.Log.Verbose("Command received");
 
             if (command != null && command == "/mmway")
             {
@@ -117,7 +122,7 @@ namespace MiniMappingway
         }
         private void DrawConfigUi()
         {
-            PluginLog.Verbose("Draw config ui on");
+            Plugin.Log.Verbose("Draw config ui on");
             ServiceManager.PluginUi.SettingsVisible = true;
         }
     }

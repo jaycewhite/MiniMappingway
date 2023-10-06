@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
@@ -58,9 +59,9 @@ namespace MiniMappingway.Manager
 
         public readonly ConcurrentDictionary<int,Queue<CircleData>> CircleData = new();
 
-        public NaviMapManager()
+        public NaviMapManager(IGameInteropProvider interop)
         {
-            SignatureHelper.Initialise(this);
+            interop.InitializeFromAttributes(this);
 
             Maps = ServiceManager.DataManager.GetExcelSheet<Map>();
             UpdateNaviMap();

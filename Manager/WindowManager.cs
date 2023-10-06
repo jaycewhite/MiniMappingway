@@ -1,5 +1,4 @@
 ﻿using System;
-using Dalamud.Logging;
 using MiniMappingway.Window;
 
 namespace MiniMappingway.Manager
@@ -11,7 +10,7 @@ namespace MiniMappingway.Manager
 
         public void AddWindowsToWindowSystem()
         {
-            PluginLog.Verbose("Adding Windows To Window System");
+            Plugin.Log.Verbose("Adding Windows To Window System");
 
             ServiceManager.WindowSystem.AddWindow(NaviMapWindow);
         }
