@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
@@ -47,23 +46,23 @@ namespace MiniMappingway.Manager
 
         public bool InCombat { get; set; }
 
-        public AtkUnitBase* NaviMapPointer => (AtkUnitBase*)ServiceManager.GameGui.GetAddonByName("_NaviMap", 1);
+        private AtkUnitBase* NaviMapPointer => (AtkUnitBase*)ServiceManager.GameGui.GetAddonByName("_NaviMap");
 
-        public readonly ExcelSheet<Map>? Maps;
+        private readonly ExcelSheet<Map>? _maps;
 
         [Signature("44 8B 3D ?? ?? ?? ?? 45 85 FF", ScanType = ScanType.StaticAddress)]
-        public readonly uint* MapSig1 = null!;
+        private readonly uint* _mapSig1 = null!;
 
         [Signature("44 0F 44 3D ?? ?? ?? ??", ScanType = ScanType.StaticAddress)]
-        public readonly uint* MapSig2 = null!;
+        private readonly uint* _mapSig2 = null!;
 
         public readonly ConcurrentDictionary<int,Queue<CircleData>> CircleData = new();
 
-        public NaviMapManager(IGameInteropProvider interop)
+        public NaviMapManager()
         {
-            interop.InitializeFromAttributes(this);
+            ServiceManager.GameInteropProvider.InitializeFromAttributes(this);
 
-            Maps = ServiceManager.DataManager.GetExcelSheet<Map>();
+            _maps = ServiceManager.DataManager.GetExcelSheet<Map>();
             UpdateNaviMap();
             UpdateMap();
         }
@@ -163,8 +162,8 @@ namespace MiniMappingway.Manager
 
         public bool CheckIfLoading()
         {
-            var locationTitle = (AtkUnitBase*)ServiceManager.GameGui.GetAddonByName("_LocationTitle", 1);
-            var fadeMiddle = (AtkUnitBase*)ServiceManager.GameGui.GetAddonByName("FadeMiddle", 1);
+            var locationTitle = (AtkUnitBase*)ServiceManager.GameGui.GetAddonByName("_LocationTitle");
+            var fadeMiddle = (AtkUnitBase*)ServiceManager.GameGui.GetAddonByName("FadeMiddle");
             return Loading =
                 locationTitle->IsVisible ||
                 fadeMiddle->IsVisible;
@@ -172,9 +171,9 @@ namespace MiniMappingway.Manager
 
         public void UpdateMap()
         {
-            if (Maps != null)
+            if (_maps != null)
             {
-                var map = Maps.GetRow(GetMapId());
+                var map = _maps.GetRow(GetMapId());
 
                 if (map == null) { return; }
 
@@ -194,7 +193,7 @@ namespace MiniMappingway.Manager
 
         private uint GetMapId()
         {
-            return *MapSig1 == 0 ? *MapSig2 : *MapSig1;
+            return *_mapSig1 == 0 ? *_mapSig2 : *_mapSig1;
         }
 
         public bool ClearPersonBag(string sourceName)

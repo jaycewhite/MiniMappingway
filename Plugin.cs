@@ -18,11 +18,7 @@ namespace MiniMappingway
         private const string CommandName = "/mmway";
         private const string CommandNameDebug = "/mmwaydebug";
 
-        [PluginService]
-        internal static IPluginLog Log { get; private set; } = null!;
-
-        [PluginService]
-        internal static IGameInteropProvider GameInteropProvider { get; private set; } = null!;
+        
 
         public delegate void OnMessageDelegate(XivChatType type, uint senderId, ref SeString sender, ref SeString message, ref bool isHandled);
 
@@ -36,7 +32,7 @@ namespace MiniMappingway
 
             #region Initialise Managers
 
-            ServiceManager.NaviMapManager = new NaviMapManager(GameInteropProvider);
+            ServiceManager.NaviMapManager = new NaviMapManager();
             ServiceManager.PluginUi = new PluginUi();
             ServiceManager.WindowManager = new WindowManager();
             ServiceManager.ApiController = new ApiController();
@@ -93,7 +89,7 @@ namespace MiniMappingway
 
         private void OnCommand(string? command, string args)
         {
-            Plugin.Log.Verbose("Command received");
+            ServiceManager.Log.Verbose("Command received");
 
             if (command != null && command == "/mmway")
             {
@@ -122,7 +118,7 @@ namespace MiniMappingway
         }
         private void DrawConfigUi()
         {
-            Plugin.Log.Verbose("Draw config ui on");
+            ServiceManager.Log.Verbose("Draw config ui on");
             ServiceManager.PluginUi.SettingsVisible = true;
         }
     }

@@ -17,6 +17,8 @@ namespace MiniMappingway.Manager
         [PluginService] public static DalamudPluginInterface DalamudPluginInterface { get; private set; } = null!;
         [PluginService] public static ICommandManager CommandManager { get; private set; } = null!;
         [PluginService] public static IFramework Framework { get; private set; } = null!;
+        [PluginService] internal static IPluginLog Log { get; private set; } = null!;
+        [PluginService] internal static IGameInteropProvider GameInteropProvider { get; private set; } = null!;
         public static WindowSystem WindowSystem { get; private set; } = new("MiniMappingway");
 
 

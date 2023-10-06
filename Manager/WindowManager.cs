@@ -10,7 +10,7 @@ namespace MiniMappingway.Manager
 
         public void AddWindowsToWindowSystem()
         {
-            Plugin.Log.Verbose("Adding Windows To Window System");
+            ServiceManager.Log.Verbose("Adding Windows To Window System");
 
             ServiceManager.WindowSystem.AddWindow(NaviMapWindow);
         }
