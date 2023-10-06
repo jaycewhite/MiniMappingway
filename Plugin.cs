@@ -2,8 +2,8 @@
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.IoC;
-using Dalamud.Logging;
 using Dalamud.Plugin;
+using Dalamud.Plugin.Services;
 using ImGuiNET;
 using MiniMappingway.Api;
 using MiniMappingway.Manager;
@@ -13,11 +13,12 @@ namespace MiniMappingway
 {
     public sealed class Plugin : IDalamudPlugin
     {
-        public string Name => "Mini-Mappingway";
+        internal static string Name => "Mini-Mappingway";
 
         private const string CommandName = "/mmway";
         private const string CommandNameDebug = "/mmwaydebug";
 
+        
 
         public delegate void OnMessageDelegate(XivChatType type, uint senderId, ref SeString sender, ref SeString message, ref bool isHandled);
 
@@ -76,7 +77,7 @@ namespace MiniMappingway
 
         }
 
-        private void TerritoryChanged(object? sender, ushort e)
+        private void TerritoryChanged(ushort _)
         {
             ServiceManager.NaviMapManager.UpdateMap();
 
@@ -88,7 +89,7 @@ namespace MiniMappingway
 
         private void OnCommand(string? command, string args)
         {
-            PluginLog.Verbose("Command received");
+            ServiceManager.Log.Verbose("Command received");
 
             if (command != null && command == "/mmway")
             {
@@ -117,7 +118,7 @@ namespace MiniMappingway
         }
         private void DrawConfigUi()
         {
-            PluginLog.Verbose("Draw config ui on");
+            ServiceManager.Log.Verbose("Draw config ui on");
             ServiceManager.PluginUi.SettingsVisible = true;
         }
     }
