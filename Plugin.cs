@@ -1,7 +1,6 @@
 ﻿using Dalamud.Game.Command;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
-using Dalamud.IoC;
 using Dalamud.Plugin;
 using ImGuiNET;
 using MiniMappingway.Api;
@@ -22,11 +21,11 @@ namespace MiniMappingway
         public delegate void OnMessageDelegate(XivChatType type, uint senderId, ref SeString sender, ref SeString message, ref bool isHandled);
 
         public Plugin(
-            [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface)
+            IDalamudPluginInterface pluginInterface)
         {
             pluginInterface.Create<ServiceManager>();
 
-            ServiceManager.Configuration = ServiceManager.DalamudPluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+            ServiceManager.Configuration = pluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
             ServiceManager.Configuration.Initialize();
 
             #region Initialise Managers

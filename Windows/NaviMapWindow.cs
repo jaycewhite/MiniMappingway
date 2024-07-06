@@ -73,7 +73,6 @@ namespace MiniMappingway.Windows
                     if (circleConfig.ShowBorder)
                     {
                         drawList.AddCircle(circle.Position, circleConfig.CircleSize, circleConfig.AutoBorderColour, 0, circleConfig.BorderRadius);
-
                     }
                 }
                 

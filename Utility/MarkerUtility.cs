@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Game.ClientState.Objects.Enums;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using ImGuiNET;
 using MiniMappingway.Manager;
 using MiniMappingway.Model;
@@ -24,14 +25,13 @@ namespace MiniMappingway.Utility
 
 
         public static bool ChecksPassed;
-        
 
         private static unsafe CircleData? CalculateCirclePosition(this KeyValuePair<int, PersonDetails> person)
         {
             var personObj = ServiceManager.ObjectTable.CreateObjectReference(person.Value.Ptr);
 
             if (personObj == null || !personObj.IsValid() || ServiceManager.ObjectTable[person.Key] == null 
-                || ((Character*)person.Value.Ptr)->GameObject.ObjectKind != (byte)ObjectKind.Player)
+                || (byte)((Character*)person.Value.Ptr)->GameObject.ObjectKind != (byte)ObjectKind.Player)
             {
                 ServiceManager.NaviMapManager.RemoveFromBag(person.Value.Id, person.Value.SourceName);
                 return null;
@@ -64,9 +64,8 @@ namespace MiniMappingway.Utility
             //if the minimap is unlocked, rotate circles around the player (the center of the minimap)
             if (!ServiceManager.NaviMapManager.IsLocked)
             {
-                personCirclePos = RotateForMiniMap(PlayerCirclePos, personCirclePos, (int)ServiceManager.NaviMapManager.Rotation);
+                personCirclePos = RotateForMiniMap(PlayerCirclePos, personCirclePos, ServiceManager.NaviMapManager.Rotation);
             }
-
 
             //If the circle would leave the minimap, clamp it to the minimap radius
             var distance = Vector2.Distance(PlayerCirclePos, personCirclePos);
@@ -80,9 +79,9 @@ namespace MiniMappingway.Utility
             return new CircleData(personCirclePos, person.Value.SourceName);
         }
 
-        private static Vector2 RotateForMiniMap(Vector2 center, Vector2 pos, int angle)
+        private static Vector2 RotateForMiniMap(Vector2 center, Vector2 pos, float angle)
         {
-            var angleInRadians = angle * (Math.PI / 180);
+            var angleInRadians = angle;
             var cosTheta = Math.Cos(angleInRadians);
             var sinTheta = Math.Sin(angleInRadians);
 
@@ -179,11 +178,11 @@ namespace MiniMappingway.Utility
             return true;
         }
 
-        public static int? GetObjIndexById(uint objId)
+        public static int? GetObjIndexById(ulong objId)
         {
             foreach (var x in Enumerable.Range(2, 200).Where(x => x % 2 == 0))
             {
-                if (ServiceManager.ObjectTable[x] != null && ServiceManager.ObjectTable[x]?.ObjectId == objId)
+                if (ServiceManager.ObjectTable[x] != null && ServiceManager.ObjectTable[x]?.GameObjectId == objId)
                 {
                     return x;
                 }

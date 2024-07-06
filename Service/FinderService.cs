@@ -78,7 +78,7 @@ namespace MiniMappingway.Service
                 unsafe
                 {
                     var charPointer = (Character*)ptr;
-                    if (charPointer->GameObject.ObjectKind != (byte)ObjectKind.Player)
+                    if ((byte)charPointer->GameObject.ObjectKind != (byte)ObjectKind.Player)
                     {
                         ServiceManager.NaviMapManager.RemoveFromBag(person.Id, dict.Key);
                         continue;
@@ -112,7 +112,7 @@ namespace MiniMappingway.Service
                 return;
             }
 
-            byte* fc = null;
+            Span<byte> fc = null;
             try
             {
                 if (ServiceManager.ObjectTable[0] is null)
@@ -151,12 +151,12 @@ namespace MiniMappingway.Service
                 return;
             }
 
-            if (friendDict.Any(x => x.Value.Id == obj.ObjectId) && friendConfig.Enabled)
+            if (friendDict.Any(x => x.Value.Id == obj.GameObjectId) && friendConfig.Enabled)
             {
                 alreadyInFriendBag = true;
             }
 
-            if (fcDict.Any(x => x.Value.Id == obj.ObjectId) && fcConfig.Enabled)
+            if (fcDict.Any(x => x.Value.Id == obj.GameObjectId) && fcConfig.Enabled)
             {
                 alreadyInFcBag = true;
             }
@@ -169,11 +169,11 @@ namespace MiniMappingway.Service
 
             var ptr = obj.Address;
             var charPointer = (Character*)ptr;
-            if (charPointer->GameObject.ObjectKind != (byte)ObjectKind.Player)
+            if ((byte)charPointer->GameObject.ObjectKind != (byte)ObjectKind.Player)
             {
                 return;
             }
-            if (charPointer->GameObject.ObjectKind == (byte)ObjectKind.BattleNpc)
+            if ((byte)charPointer->GameObject.ObjectKind == (byte)ObjectKind.BattleNpc)
             {
                 return;
             }
@@ -187,7 +187,7 @@ namespace MiniMappingway.Service
             {
                 if (charPointer->IsFriend)
                 {
-                    var personDetails = new PersonDetails(obj.Name.ToString(), obj.ObjectId, FriendKey, obj.Address);
+                    var personDetails = new PersonDetails(obj.Name.ToString(), obj.GameObjectId, FriendKey, obj.Address);
                     alreadyInFriendBag = true;
                     ServiceManager.NaviMapManager.AddToBag(personDetails);
 
@@ -200,23 +200,20 @@ namespace MiniMappingway.Service
                 {
                     return;
                 }
-                var tempFc = new ReadOnlySpan<byte>(charPointer->FreeCompanyTag, 7);
-                var playerFc = new ReadOnlySpan<byte>(fc, 7);
-                if (fc->CompareTo(0) != 0)
-                {
+                var tempFc = charPointer->FreeCompanyTag;
+                var playerFc = fc;
                     if (playerFc.SequenceEqual(tempFc))
                     {
 
-                        var personDetails = new PersonDetails(obj.Name.ToString(), obj.ObjectId, FcMembersKey, obj.Address);
+                        var personDetails = new PersonDetails(obj.Name.ToString(), obj.GameObjectId, FcMembersKey, obj.Address);
                         alreadyInFcBag = true;
                         ServiceManager.NaviMapManager.AddToBag(personDetails);
                     }
-                }
             }
 
             if (!alreadyInFcBag && !alreadyInFriendBag && everyoneConfig.Enabled)
             {
-                var personDetails = new PersonDetails(obj.Name.ToString(), obj.ObjectId, EveryoneKey, obj.Address);
+                var personDetails = new PersonDetails(obj.Name.ToString(), obj.GameObjectId, EveryoneKey, obj.Address);
 
                 ServiceManager.NaviMapManager.AddToBag(personDetails);
 

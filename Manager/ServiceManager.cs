@@ -14,7 +14,7 @@ namespace MiniMappingway.Manager
         [PluginService] public static IGameGui GameGui { get; private set; } = null!;
         [PluginService] public static IObjectTable ObjectTable { get; private set; } = null!;
         [PluginService] public static IDataManager DataManager { get; private set; } = null!;
-        [PluginService] public static DalamudPluginInterface DalamudPluginInterface { get; private set; } = null!;
+        [PluginService] public static IDalamudPluginInterface DalamudPluginInterface { get; private set; } = null!;
         [PluginService] public static ICommandManager CommandManager { get; private set; } = null!;
         [PluginService] public static IFramework Framework { get; private set; } = null!;
         [PluginService] internal static IPluginLog Log { get; private set; } = null!;

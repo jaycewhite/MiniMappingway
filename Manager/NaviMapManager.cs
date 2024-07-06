@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Utility.Signatures;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
 using Lumina.Excel;
@@ -49,12 +50,6 @@ namespace MiniMappingway.Manager
         private AtkUnitBase* NaviMapPointer => (AtkUnitBase*)ServiceManager.GameGui.GetAddonByName("_NaviMap");
 
         private readonly ExcelSheet<Map>? _maps;
-
-        [Signature("44 8B 3D ?? ?? ?? ?? 45 85 FF", ScanType = ScanType.StaticAddress)]
-        private readonly uint* _mapSig1 = null!;
-
-        [Signature("44 0F 44 3D ?? ?? ?? ??", ScanType = ScanType.StaticAddress)]
-        private readonly uint* _mapSig2 = null!;
 
         public readonly ConcurrentDictionary<int,Queue<CircleData>> CircleData = new();
 
@@ -133,20 +128,18 @@ namespace MiniMappingway.Manager
             {
                 return false;
             }
-
+            
             //There's probably a better way of doing this but I don't know it for now
             IsLocked = ((AtkComponentCheckBox*)NaviMapPointer->GetNodeById(4)->GetComponent())->IsChecked;
-
-            var rotationPtr = (float*)((nint)NaviMapPointer + 0x254);
-            var naviScalePtr = (float*)((nint)NaviMapPointer + 0x24C);
+            
             if (NaviMapPointer->UldManager.LoadedState != AtkLoadState.Loaded)
             {
                 return false;
             }
             try
             {
-                Rotation = *rotationPtr;
-                Zoom = *naviScalePtr;
+                Rotation = NaviMapPointer->GetNodeById(8)->Rotation;
+                Zoom = NaviMapPointer->GetNodeById(18)->GetComponent()->GetImageNodeById(6)->ScaleX;
             }
             catch
             {
@@ -157,6 +150,7 @@ namespace MiniMappingway.Manager
             Y = NaviMapPointer->Y;
             NaviScale = NaviMapPointer->Scale;
             Visible = (NaviMapPointer->IsVisible && NaviMapPointer->VisibilityFlags == 0);
+            
             return true;
         }
 
@@ -193,7 +187,7 @@ namespace MiniMappingway.Manager
 
         private uint GetMapId()
         {
-            return *_mapSig1 == 0 ? *_mapSig2 : *_mapSig1;
+            return AgentMap.Instance()->CurrentMapId;
         }
 
         public bool ClearPersonBag(string sourceName)
@@ -252,7 +246,7 @@ namespace MiniMappingway.Manager
             return dict.TryAdd((int)personIndex, details);
         }
 
-        public bool RemoveFromBag(uint id, string sourceName)
+        public bool RemoveFromBag(ulong id, string sourceName)
         {
             PersonDict.TryGetValue(sourceName, out var dict);
             if (dict == null)
