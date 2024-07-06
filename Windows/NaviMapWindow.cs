@@ -18,7 +18,7 @@ namespace MiniMappingway.Windows
                 | ImGuiWindowFlags.NoBringToFrontOnFocus | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNavFocus;
 
             ForceMainWindow = true;
-            IsOpen = true;
+            IsOpen = false;
         }
 
         public override void Draw()

@@ -141,6 +141,7 @@ namespace MiniMappingway.Utility
             {
                 return false;
             }
+
             if (!ServiceManager.NaviMapManager.UpdateNaviMap())
             {
                 ChecksPassed = false;

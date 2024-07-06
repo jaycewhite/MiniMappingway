@@ -5,6 +5,7 @@ using System.Numerics;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using MiniMappingway.Manager;
 using MiniMappingway.Model;
 using MiniMappingway.Utility;
@@ -42,7 +43,10 @@ namespace MiniMappingway.Service
 
         private void Iterate(IFramework framework)
         {
-
+            unsafe
+            {
+                AgentMap.Instance()->ResetMiniMapMarkers();
+            }
             CheckNewPeople(_index);
             CheckSamePerson(_index);
 
@@ -54,6 +58,22 @@ namespace MiniMappingway.Service
 
             }
             _index = _enumerator.Current;
+
+            foreach (var dict in ServiceManager.NaviMapManager.PersonDict)
+            {
+                //ServiceManager.Log.Verbose(dict.Value.Count.ToString());
+
+                foreach (var newdict in dict.Value)
+                {
+                    
+                    unsafe
+                    {
+                        var personObj = ServiceManager.ObjectTable.CreateObjectReference(newdict.Value.Ptr);
+                        AgentMap.Instance()->AddMiniMapMarker(new Vector3(personObj.Position.X, 0, personObj.Position.Z), 60260, 60);
+                    }
+
+                }
+            }
         }
 
         private static void CheckSamePerson(in int i)
@@ -92,7 +112,7 @@ namespace MiniMappingway.Service
         }
         private static void CheckNewPeople(in int i)
         {
-            if (MarkerUtility.ChecksPassed)
+            if (MarkerUtility.RunChecks())
             {
                 LookFor(i);
             }
