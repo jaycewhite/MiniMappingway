@@ -4,6 +4,7 @@ using System.Linq;
 using System.Numerics;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Plugin.Services;
+using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using MiniMappingway.Manager;
 using MiniMappingway.Model;
@@ -130,7 +131,10 @@ namespace MiniMappingway.Service
                 {
                     return;
                 }
-                fc = player->FreeCompanyTag;
+                if (!player->FreeCompanyTagString.IsNullOrEmpty())
+                {
+                    fc = player->FreeCompanyTag;
+                }
             }
             catch
             {
@@ -196,12 +200,10 @@ namespace MiniMappingway.Service
 
             if (fcConfig.Enabled && !alreadyInFcBag)
             {
-                if (fc == null)
+                if (fc != null)
                 {
-                    return;
-                }
-                var tempFc = charPointer->FreeCompanyTag;
-                var playerFc = fc;
+                    var tempFc = charPointer->FreeCompanyTag;
+                    var playerFc = fc;
                     if (playerFc.SequenceEqual(tempFc))
                     {
 
@@ -209,6 +211,7 @@ namespace MiniMappingway.Service
                         alreadyInFcBag = true;
                         ServiceManager.NaviMapManager.AddToBag(personDetails);
                     }
+                }
             }
 
             if (!alreadyInFcBag && !alreadyInFriendBag && everyoneConfig.Enabled)
