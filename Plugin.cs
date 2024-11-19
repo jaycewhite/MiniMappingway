@@ -7,110 +7,107 @@ using MiniMappingway.Api;
 using MiniMappingway.Manager;
 using MiniMappingway.Service;
 
-namespace MiniMappingway
+namespace MiniMappingway;
+
+public sealed class Plugin : IDalamudPlugin
 {
-    public sealed class Plugin : IDalamudPlugin
+    internal static string Name => "Mini-Mappingway";
+
+    private const string CommandName = "/mmway";
+    private const string CommandNameDebug = "/mmwaydebug";
+
+    public delegate void OnMessageDelegate(XivChatType type, uint senderId, ref SeString sender, ref SeString message, ref bool isHandled);
+
+    public Plugin(
+        IDalamudPluginInterface pluginInterface)
     {
-        internal static string Name => "Mini-Mappingway";
+        pluginInterface.Create<ServiceManager>();
 
-        private const string CommandName = "/mmway";
-        private const string CommandNameDebug = "/mmwaydebug";
+        ServiceManager.Configuration = pluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+        ServiceManager.Configuration.Initialize();
 
-        
+        #region Initialise Managers
 
-        public delegate void OnMessageDelegate(XivChatType type, uint senderId, ref SeString sender, ref SeString message, ref bool isHandled);
+        ServiceManager.NaviMapManager = new NaviMapManager();
+        ServiceManager.PluginUi = new PluginUi();
+        ServiceManager.WindowManager = new WindowManager();
+        ServiceManager.ApiController = new ApiController();
 
-        public Plugin(
-            IDalamudPluginInterface pluginInterface)
+        #endregion
+
+        #region Initialise Services
+
+        ServiceManager.FinderService = new FinderService();
+
+        #endregion
+
+        ServiceManager.WindowManager.AddWindowsToWindowSystem();
+
+        #region Setup Commands and Actions
+
+        ServiceManager.CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
-            pluginInterface.Create<ServiceManager>();
+            HelpMessage = "Opens Mini-Mappingway settings"
+        });
 
-            ServiceManager.Configuration = pluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
-            ServiceManager.Configuration.Initialize();
+        ServiceManager.CommandManager.AddHandler(CommandNameDebug, new CommandInfo(OnCommand));
 
-            #region Initialise Managers
+        ServiceManager.DalamudPluginInterface.UiBuilder.Draw += ServiceManager.WindowSystem.Draw;
+        ServiceManager.DalamudPluginInterface.UiBuilder.OpenConfigUi += DrawConfigUi;
 
-            ServiceManager.NaviMapManager = new NaviMapManager();
-            ServiceManager.PluginUi = new PluginUi();
-            ServiceManager.WindowManager = new WindowManager();
-            ServiceManager.ApiController = new ApiController();
+        ServiceManager.ClientState.TerritoryChanged += TerritoryChanged;
 
-            #endregion
+        #endregion
+    }
 
-            #region Initialise Services
+    public void Dispose()
+    {
+        ServiceManager.CommandManager.RemoveHandler(CommandName);
+        ServiceManager.CommandManager.RemoveHandler(CommandNameDebug);
+        ServiceManager.DalamudPluginInterface.UiBuilder.Draw -= ServiceManager.WindowSystem.Draw;
+        ServiceManager.DalamudPluginInterface.UiBuilder.OpenConfigUi -= DrawConfigUi;
+        ServiceManager.ClientState.TerritoryChanged -= TerritoryChanged;
+        ServiceManager.Dispose();
 
-            ServiceManager.FinderService = new FinderService();
+    }
 
-            #endregion
+    private void TerritoryChanged(ushort _)
+    {
+        ServiceManager.NaviMapManager.UpdateMap();
 
-            ServiceManager.WindowManager.AddWindowsToWindowSystem();
-
-            #region Setup Commands and Actions
-
-            ServiceManager.CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
-            {
-                HelpMessage = "Opens Mini-Mappingway settings"
-            });
-
-            ServiceManager.CommandManager.AddHandler(CommandNameDebug, new CommandInfo(OnCommand));
-
-            ServiceManager.DalamudPluginInterface.UiBuilder.Draw += ServiceManager.WindowSystem.Draw;
-            ServiceManager.DalamudPluginInterface.UiBuilder.OpenConfigUi += DrawConfigUi;
-
-            ServiceManager.ClientState.TerritoryChanged += TerritoryChanged;
-
-            #endregion
-        }
-
-        public void Dispose()
+        foreach (var dict in ServiceManager.NaviMapManager.PersonDict)
         {
-            ServiceManager.CommandManager.RemoveHandler(CommandName);
-            ServiceManager.CommandManager.RemoveHandler(CommandNameDebug);
-            ServiceManager.DalamudPluginInterface.UiBuilder.Draw -= ServiceManager.WindowSystem.Draw;
-            ServiceManager.DalamudPluginInterface.UiBuilder.OpenConfigUi -= DrawConfigUi;
-            ServiceManager.ClientState.TerritoryChanged -= TerritoryChanged;
-            ServiceManager.Dispose();
-
+            ServiceManager.NaviMapManager.ClearPersonBag(dict.Key);
         }
+    }
 
-        private void TerritoryChanged(ushort _)
-        {
-            ServiceManager.NaviMapManager.UpdateMap();
+    private void OnCommand(string? command, string args)
+    {
+        ServiceManager.Log.Verbose("Command received");
 
-            foreach (var dict in ServiceManager.NaviMapManager.PersonDict)
-            {
-                ServiceManager.NaviMapManager.ClearPersonBag(dict.Key);
-            }
-        }
-
-        private void OnCommand(string? command, string args)
-        {
-            ServiceManager.Log.Verbose("Command received");
-
-            if (command is "/mmway")
-            {
-                ServiceManager.WindowManager.SettingsWindow.Toggle();
-            }
-            if (command is CommandNameDebug)
-            {
-                ServiceManager.NaviMapManager.DebugMode = !ServiceManager.NaviMapManager.DebugMode;
-                if (ServiceManager.NaviMapManager.DebugMode)
-                {
-                    ServiceManager.WindowManager.NaviMapWindow.Flags &= ~ImGuiWindowFlags.NoBackground;
-                }
-                else
-                {
-                    ServiceManager.WindowManager.NaviMapWindow.Flags |= ImGuiWindowFlags.NoBackground;
-
-                }
-            }
-            // in response to the slash command, just display our main ui
-
-        }
-        
-        private void DrawConfigUi()
+        if (command is "/mmway")
         {
             ServiceManager.WindowManager.SettingsWindow.Toggle();
         }
+        if (command is CommandNameDebug)
+        {
+            ServiceManager.NaviMapManager.DebugMode = !ServiceManager.NaviMapManager.DebugMode;
+            if (ServiceManager.NaviMapManager.DebugMode)
+            {
+                ServiceManager.WindowManager.NaviMapWindow.Flags &= ~ImGuiWindowFlags.NoBackground;
+            }
+            else
+            {
+                ServiceManager.WindowManager.NaviMapWindow.Flags |= ImGuiWindowFlags.NoBackground;
+
+            }
+        }
+        // in response to the slash command, just display our main ui
+
+    }
+
+    private void DrawConfigUi()
+    {
+        ServiceManager.WindowManager.SettingsWindow.Toggle();
     }
 }
