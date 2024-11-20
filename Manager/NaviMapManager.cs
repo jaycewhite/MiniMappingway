@@ -166,21 +166,25 @@ public unsafe class NaviMapManager : IDisposable
     {
         if (_maps != null)
         {
-            var map = _maps.GetRow(GetMapId());
-
-            if (map.Equals(default(Map))) { return; }
-
-            if (map.SizeFactor != 0)
+            try
             {
-                ZoneScale = (float)map.SizeFactor / 100;
-            }
-            else
-            {
-                ZoneScale = 1;
-            }
-            OffsetX = map.OffsetX;
-            OffsetY = map.OffsetY;
+                var map = _maps.GetRow(GetMapId());
 
+                if (map.SizeFactor != 0)
+                {
+                    ZoneScale = (float)map.SizeFactor / 100;
+                }
+                else
+                {
+                    ZoneScale = 1;
+                }
+                OffsetX = map.OffsetX;
+                OffsetY = map.OffsetY;
+            }
+            catch (ArgumentOutOfRangeException e)
+            {
+                return;
+            }
         }
     }
 
