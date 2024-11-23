@@ -1,108 +1,106 @@
-﻿using System.Linq;
-using System.Numerics;
-using Dalamud.Interface.Windowing;
+﻿using Dalamud.Interface.Windowing;
 using ImGuiNET;
 using MiniMappingway.Manager;
 using MiniMappingway.Utility;
+using System.Linq;
+using System.Numerics;
 
-namespace MiniMappingway.Windows
+namespace MiniMappingway.Windows;
+
+internal class NaviMapWindow : Window
 {
-    internal class NaviMapWindow : Window
+    public NaviMapWindow() : base("NaviMapWindow")
     {
-        public NaviMapWindow() : base("NaviMapWindow")
+        Size = new Vector2(200, 200);
+        Position = new Vector2(200, 200);
+
+        Flags |= ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground
+            | ImGuiWindowFlags.NoBringToFrontOnFocus | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNavFocus;
+
+        ForceMainWindow = true;
+        IsOpen = true;
+    }
+
+    public override void Draw()
+    {
+        var drawList = ImGui.GetWindowDrawList();
+
+        if (ServiceManager.NaviMapManager.DebugMode)
         {
-            Size = new Vector2(200, 200);
-            Position = new Vector2(200, 200);
+            ImGui.Text($"zoom {ServiceManager.NaviMapManager.Zoom}");
+            ImGui.Text($"naviScale {ServiceManager.NaviMapManager.NaviScale}");
+            ImGui.Text($"zoneScale {ServiceManager.NaviMapManager.ZoneScale}");
+            ImGui.Text($"offsetX {ServiceManager.NaviMapManager.OffsetX}");
+            ImGui.Text($"offsetY {ServiceManager.NaviMapManager.OffsetY}");
+            ImGui.Text($"x {ServiceManager.NaviMapManager.X}");
+            ImGui.Text($"y {ServiceManager.NaviMapManager.Y}");
+            ImGui.Text($"islocked {ServiceManager.NaviMapManager.IsLocked}");
+            ImGui.Text($"se {ServiceManager.Configuration.SourceConfigs.Count}");
+            ImGui.Text($"circles {ServiceManager.NaviMapManager.CircleData.Values.SelectMany(x => x).Count()}");
 
-            Flags |= ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground
-                | ImGuiWindowFlags.NoBringToFrontOnFocus | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNavFocus;
+            var count = 0;
+            foreach (var dict in ServiceManager.NaviMapManager.PersonDict)
+            {
+                count += dict.Value.Count;
 
-            ForceMainWindow = true;
-            IsOpen = true;
+            }
+            ImGui.Text($"people {count}");
         }
 
-        public override void Draw()
+        //foreach (var keyValuePair in ServiceManager.NaviMapManager.CircleData.Where(x => x.Value.Any()))
+        foreach (var i in ServiceManager.NaviMapManager.CircleData.Where(x => x.Value.Any()).OrderBy(x => x.Key))
         {
-            var drawList = ImGui.GetWindowDrawList();
-
-            if (ServiceManager.NaviMapManager.DebugMode)
+            ServiceManager.NaviMapManager.CircleData.TryGetValue(i.Key, out var keyValuePair);
+            if (keyValuePair == null)
             {
-                ImGui.Text($"zoom {ServiceManager.NaviMapManager.Zoom}");
-                ImGui.Text($"naviScale {ServiceManager.NaviMapManager.NaviScale}");
-                ImGui.Text($"zoneScale {ServiceManager.NaviMapManager.ZoneScale}");
-                ImGui.Text($"offsetX {ServiceManager.NaviMapManager.OffsetX}");
-                ImGui.Text($"offsetY {ServiceManager.NaviMapManager.OffsetY}");
-                ImGui.Text($"x {ServiceManager.NaviMapManager.X}");
-                ImGui.Text($"y {ServiceManager.NaviMapManager.Y}");
-                ImGui.Text($"islocked {ServiceManager.NaviMapManager.IsLocked}");
-                ImGui.Text($"se {ServiceManager.Configuration.SourceConfigs.Count}");
-                ImGui.Text($"circles {ServiceManager.NaviMapManager.CircleData.Values.SelectMany(x => x).Count()}");
-
-
-                var count = 0;
-                foreach (var dict in ServiceManager.NaviMapManager.PersonDict)
-                {
-                    count += dict.Value.Count;
-
-                }
-                ImGui.Text($"people {count}");
+                continue;
             }
-
-            //foreach (var keyValuePair in ServiceManager.NaviMapManager.CircleData.Where(x => x.Value.Any()))
-            foreach (var i in ServiceManager.NaviMapManager.CircleData.Where(x => x.Value.Any()).OrderBy(x => x.Key))
+            while (keyValuePair.Any())
             {
-                ServiceManager.NaviMapManager.CircleData.TryGetValue(i.Key, out var keyValuePair);
-                if (keyValuePair == null)
+                keyValuePair.TryDequeue(out var circle);
+                if (circle == null)
                 {
                     continue;
                 }
-                while (keyValuePair.Any())
+
+                var circleConfig = ServiceManager.NaviMapManager.SourceDataDict[circle.SourceName];
+                if (!circleConfig.Enabled)
                 {
-                    keyValuePair.TryDequeue(out var circle);
-                    if (circle == null)
-                    {
-                        continue;
-                    }
-
-                    var circleConfig = ServiceManager.NaviMapManager.SourceDataDict[circle.SourceName];
-                    if (!circleConfig.Enabled)
-                    {
-                        continue;
-                    }
-                    drawList.AddCircleFilled(circle.Position, circleConfig.CircleSize, circleConfig.Color);
-                    if (circleConfig.ShowBorder)
-                    {
-                        drawList.AddCircle(circle.Position, circleConfig.CircleSize, circleConfig.AutoBorderColour, 0, circleConfig.BorderRadius);
-                    }
+                    continue;
                 }
-                
+                drawList.AddCircleFilled(circle.Position, circleConfig.CircleSize, circleConfig.Color);
+                if (circleConfig.ShowBorder)
+                {
+                    drawList.AddCircle(circle.Position, circleConfig.CircleSize, circleConfig.AutoBorderColour, 0, circleConfig.BorderRadius);
+                }
             }
-            
+
         }
 
-        public override bool DrawConditions()
+    }
+
+    public override bool DrawConditions()
+    {
+        if (!MarkerUtility.RunChecks())
         {
-            if (!MarkerUtility.RunChecks())
-            {
-                return false;
-            }
-            if (ServiceManager.NaviMapManager.InCombat)
-            {
-                return false;
-            }
-
-            if (ServiceManager.ClientState.IsPvPExcludingDen)
-            {
-                return false;
-            }
-
-            return true;
+            return false;
         }
-
-        public override void PreDraw()
+        if (ServiceManager.NaviMapManager.InCombat)
         {
-            MarkerUtility.PrepareDrawOnMinimap();
-
+            return false;
         }
+
+        if (ServiceManager.ClientState.IsPvPExcludingDen)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    public override void PreDraw()
+    {
+        MarkerUtility.PrepareDrawOnMinimap();
+
     }
 }

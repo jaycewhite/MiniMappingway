@@ -1,29 +1,27 @@
-﻿using System;
-using System.Collections.Generic;
-using Dalamud.Configuration;
+﻿using Dalamud.Configuration;
 using MiniMappingway.Manager;
 using MiniMappingway.Model;
+using System;
+using System.Collections.Generic;
 
-namespace MiniMappingway
+namespace MiniMappingway;
+
+[Serializable]
+public class Configuration : IPluginConfiguration
 {
-    [Serializable]
-    public class Configuration : IPluginConfiguration
+    public int Version { get; set; } = 0;
+
+    public Dictionary<string, SourceData> SourceConfigs { get; set; } = [];
+
+    public bool Enabled { get; set; } = true;
+
+    public void Initialize()
     {
-        public int Version { get; set; } = 0;
 
-        public Dictionary<string,SourceData> SourceConfigs { get; set; } = new ();
+    }
 
-        public bool Enabled { get; set; } = true;
-        
-
-        public void Initialize()
-        {
-
-        }
-
-        public void Save()
-        {
-            ServiceManager.DalamudPluginInterface.SavePluginConfig(this);
-        }
+    public void Save()
+    {
+        ServiceManager.DalamudPluginInterface.SavePluginConfig(this);
     }
 }

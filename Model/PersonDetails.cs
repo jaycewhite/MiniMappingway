@@ -1,23 +1,22 @@
 ﻿using System;
 
-namespace MiniMappingway.Model
+namespace MiniMappingway.Model;
+
+public class PersonDetails
 {
-    public class PersonDetails
+    public string Name { get; }
+
+    public ulong Id { get; }
+
+    public string SourceName { get; }
+
+    public IntPtr Ptr { get; }
+
+    public PersonDetails(string name, ulong id, string sourceName, IntPtr ptr)
     {
-        public string Name { get; }
-
-        public ulong Id { get; }
-
-        public string SourceName { get; }
-
-        public IntPtr Ptr { get; }
-
-        public PersonDetails(string name, ulong id, string sourceName, IntPtr ptr)
-        {
-            Name = name;
-            Id = id;
-            SourceName = sourceName;
-            Ptr = ptr;
-        }
+        Name = name;
+        Id = id;
+        SourceName = sourceName;
+        Ptr = ptr;
     }
 }
