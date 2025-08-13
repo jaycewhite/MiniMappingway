@@ -1,5 +1,5 @@
 ﻿using Dalamud.Interface.Windowing;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using MiniMappingway.Manager;
 using MiniMappingway.Utility;
 using System.Linq;

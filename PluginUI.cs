@@ -1,4 +1,4 @@
-﻿using ImGuiNET;
+﻿using Dalamud.Bindings.ImGui;
 using MiniMappingway.Manager;
 using MiniMappingway.Model;
 using MiniMappingway.Service;
